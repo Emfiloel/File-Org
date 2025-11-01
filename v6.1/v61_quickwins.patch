@@ -1,0 +1,123 @@
+--- a/master_file_6.1.py
++++ b/master_file_6.1.py
+@@
+-# ==============================
+-# FILE ORGANIZER - MASTER FILE 6.1
+-# ENHANCED ARCHITECTURE EDITION
+-# ==============================
++# ==============================
++# FILE ORGANIZER - MASTER FILE 6.1
++# ENHANCED ARCHITECTURE EDITION
++# ==============================
++VERSION: str = "v6.1 Enhanced Architecture"
+@@
+-from typing import Iterator, Tuple, Dict, List, Optional, Callable, Any, Union
++from typing import Iterator, Tuple, Dict, List, Optional, Callable, Any, Union
++
++# Note on duplicate cache semantics:
++# DUPLICATE_DETECTOR.clear_session() is called per operation run,
++# so the duplicate hash DB is effectively used as a fast, per-run cache.
++# If you want cross-session de-duplication persistence, remove/guard the clear
++# and add explicit reconciliation logic + tests. For v6.1 baseline we keep per-run.
+@@
+-try:
+-    from tkinterdnd2 import TkinterDnD, DND_FILES
+-    root = TkinterDnD.Tk()
+-    dnd_available = True
+-except ImportError:
+-    root = tk.Tk()
+-    dnd_available = False
+-
+-root.title("File Organizer - Master File 5 (Production Edition)")
++try:
++    from tkinterdnd2 import TkinterDnD, DND_FILES
++    root = TkinterDnD.Tk()
++    dnd_available = True
++except ImportError:
++    root = tk.Tk()
++    dnd_available = False
++
++root.title(f"File Organizer — {VERSION}")
+@@
+-header = ttk.Frame(root, padding=(8, 8))
++header = ttk.Frame(root, padding=(8, 8))
+ header.grid(row=0, column=0, columnspan=3, sticky="ew")
+-ttk.Label(header, text="File Organizer - v5 Production Edition", style="Title.TLabel").pack(side="left")
++ttk.Label(header, text=f"File Organizer — {VERSION}", style="Title.TLabel").pack(side="left")
+@@
+-def is_safe_directory(path: str) -> Tuple[bool, str]:
++def is_safe_directory(path: str) -> Tuple[bool, str]:
+@@
+-        # Remove empty strings and normalize paths
+-        forbidden_starts = [
+-            os.path.abspath(p) for p in forbidden_starts if p
+-        ]
+-
+-        # Check if path starts with any forbidden directory
+-        for forbidden in forbidden_starts:
+-            if real_path.startswith(forbidden):
+-                return False, f"Cannot organize system directory: {forbidden}"
++        # Remove empty strings and normalize paths (case-insensitive safety on Windows)
++        forbidden_starts = [os.path.abspath(p) for p in forbidden_starts if p]
++        if system == "Windows":
++            real_cmp = real_path.casefold()
++            forb_cmp = [f.casefold() for f in forbidden_starts]
++        else:
++            real_cmp = real_path
++            forb_cmp = forbidden_starts
++
++        # Check if path starts with any forbidden directory
++        for forbidden, forbidden_cmp in zip(forbidden_starts, forb_cmp):
++            if real_cmp.startswith(forbidden_cmp):
++                return False, f"Cannot organize system directory: {forbidden}"
+@@
+ def show_help():
+@@
+-    help_win.title("Help - Production Edition Guide")
++    help_win.title(f"Help — {VERSION} Guide")
+@@
+-    help_text = """
+-FILE ORGANIZER - MASTER FILE 5 (PRODUCTION EDITION)
+-═══════════════════════════════════════════════════
++    help_text = f"""
++FILE ORGANIZER — {VERSION}
++═══════════════════════════════════════════════════
+ 
+-🆕 NEW IN VERSION 5 (PRODUCTION FEATURES):
++🆕 NEW IN VERSION 6.1 (ENHANCED ARCHITECTURE):
++• Progress UI for UNDO
++• Comprehensive type hints
++• Cleaner separation of concerns
++• Same safety posture preserved (path traversal, TOCTOU)
+ 
+-🔥 SEQUENTIAL PATTERN DETECTION (NEW!)
++🔥 SEQUENTIAL PATTERN DETECTION
+@@
+-🆕 PATTERN SCANNER WITH 7 PATTERN TYPES
++🔍 PATTERN SCANNER WITH 7 PATTERN TYPES
+@@
+-📁 CENTRALIZED DATA DIRECTORY
++📁 CENTRALIZED DATA DIRECTORY
+@@
+-🔄 OPERATION LOGGING & UNDO
++🔄 OPERATION LOGGING & UNDO
+@@
+-🔐 HASH-BASED DUPLICATE DETECTION
++🔐 HASH-BASED DUPLICATE DETECTION (per-run cache in v6.1)
+@@
+-⚡ MEMORY EFFICIENT PROCESSING
++⚡ MEMORY EFFICIENT PROCESSING
+@@
+-✅ PRE-FLIGHT VALIDATION
++✅ PRE-FLIGHT VALIDATION
+@@
+-🛡️ SAFETY FEATURES
++🛡️ SAFETY FEATURES
+@@
+-⚙️ CONFIGURATION SYSTEM
++⚙️ CONFIGURATION SYSTEM
+@@
+-Version 5.0 - Production Ready
+-"""
++Version 6.1 — Enhanced Architecture
++"""

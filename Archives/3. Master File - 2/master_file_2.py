@@ -5,8 +5,23 @@ import os
 import re
 import shutil
 import json
+import platform
+import logging
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox, simpledialog
+
+# ==============================
+# LOGGING SETUP
+# ==============================
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('file_organizer.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # ==============================
 # GUI WINDOW SETUP
@@ -27,8 +42,9 @@ for t in ("clam", "vista", "xpnative", "default"):
     try:
         style.theme_use(t)
         break
-    except Exception:
-        pass
+    except tk.TclError:
+        # Theme not available, try next one
+        continue
 
 FONT_BASE  = ("Segoe UI", 10)
 FONT_TITLE = ("Segoe UI Semibold", 12)
@@ -65,61 +81,260 @@ ttk.Button(paths_box, text="Browse", command=lambda: target_entry.insert(0, file
 # ==============================
 # CORE HELPERS
 # ==============================
+def validate_operation(source_dirs, target_dir):
+    """
+    Comprehensive pre-flight validation before file operations.
+
+    Checks:
+    - Source and target are not the same
+    - Target is not inside source (infinite loop prevention)
+    - Sufficient disk space available
+    - Write permissions exist
+
+    Returns:
+        (is_valid, error_message) - True if all checks pass
+    """
+    # Check 1: Source and target not the same
+    target_abs = os.path.abspath(target_dir)
+    for source in source_dirs:
+        source_abs = os.path.abspath(source)
+        if source_abs == target_abs:
+            return False, "Source and target directories cannot be the same!"
+
+    # Check 2: Target not inside source (infinite recursion)
+    for source in source_dirs:
+        source_abs = os.path.abspath(source)
+        if target_abs.startswith(source_abs + os.sep):
+            return False, f"Target cannot be inside source!\nSource: {source_abs}\nTarget: {target_abs}"
+
+    # Check 3: Disk space (warn if < 1GB free)
+    try:
+        stat = shutil.disk_usage(target_dir)
+        free_gb = stat.free / (1024**3)
+        if free_gb < 1.0:
+            logger.warning(f"Low disk space: {free_gb:.2f} GB free")
+            # Don't block, just warn
+    except (OSError, ValueError, PermissionError) as e:
+        logger.warning(f"Could not check disk space: {e}")
+
+    # Check 4: Write permissions
+    if not os.access(target_dir, os.W_OK):
+        return False, f"No write permission for target directory: {target_dir}"
+
+    return True, ""
+
+def is_safe_directory(path):
+    """
+    Validate that a directory is safe to organize.
+
+    Prevents organizing system directories that could damage the OS.
+
+    Args:
+        path: Directory path to validate
+
+    Returns:
+        (is_safe, reason) - True if safe, False with reason if not
+    """
+    try:
+        # Get the absolute, canonical path (resolves symlinks, .., etc.)
+        real_path = os.path.abspath(os.path.realpath(path))
+
+        # Define forbidden directories by operating system
+        system = platform.system()
+
+        if system == "Windows":
+            forbidden_starts = [
+                "C:\\Windows",
+                "C:\\Program Files",
+                "C:\\Program Files (x86)",
+                "C:\\ProgramData",
+                os.environ.get("SystemRoot", ""),
+            ]
+        elif system == "Darwin":  # macOS
+            forbidden_starts = [
+                "/System",
+                "/Library",
+                "/Applications",
+                "/usr",
+                "/bin",
+                "/sbin",
+                "/etc",
+            ]
+        else:  # Linux and others
+            forbidden_starts = [
+                "/bin",
+                "/boot",
+                "/dev",
+                "/etc",
+                "/lib",
+                "/proc",
+                "/root",
+                "/sbin",
+                "/sys",
+                "/usr",
+                "/var",
+            ]
+
+        # Remove empty strings and normalize paths
+        forbidden_starts = [
+            os.path.abspath(p) for p in forbidden_starts if p
+        ]
+
+        # Check if path starts with any forbidden directory
+        for forbidden in forbidden_starts:
+            if real_path.startswith(forbidden):
+                return False, f"Cannot organize system directory: {forbidden}"
+
+        # Check if path is writable
+        if not os.access(real_path, os.W_OK):
+            return False, f"Directory is not writable: {path}"
+
+        return True, ""
+
+    except (OSError, ValueError, PermissionError, TypeError) as e:
+        return False, f"Invalid path: {str(e)}"
+
 def get_source_dirs():
-    return [d.strip() for d in source_entry.get().split(',') if os.path.isdir(d.strip())]
+    """
+    Get validated source directories from user input.
+
+    Validates each directory for:
+    - Existence
+    - Safety (not a system directory)
+
+    Returns:
+        list: List of valid source directory paths
+    """
+    dirs = []
+    raw_input = source_entry.get().strip()
+
+    if not raw_input:
+        return []
+
+    for d in raw_input.split(','):
+        d = d.strip()
+
+        # Check if directory exists
+        if not os.path.isdir(d):
+            report_error("Invalid Source", f"Not a directory: {d}")
+            continue
+
+        # Check if directory is safe
+        is_safe, reason = is_safe_directory(d)
+        if not is_safe:
+            report_error("Unsafe Directory", reason)
+            continue
+
+        dirs.append(d)
+
+    return dirs
 
 def report_error(title, message):
+    """Report an error to the preview panel, or print if GUI not ready."""
     sep = "-" * 70
     try:
         preview_text.insert("end", f"\n{sep}\n{title}: {message}\n{sep}\n")
         preview_text.see("end")
-    except Exception:
+    except (tk.TclError, NameError, AttributeError):
+        # GUI not ready or preview_text not accessible - fall back to console
         print(f"[{title}] {message}")
 
 def move_file(src, dst_folder, filename):
+    """
+    Move a file with collision handling and race condition protection.
+
+    Args:
+        src: Source file path
+        dst_folder: Destination folder path
+        filename: Name of the file
+
+    Returns:
+        True if successful, False otherwise
+    """
+    # Check file still exists (race condition protection)
+    if not os.path.exists(src):
+        logger.warning(f"Source file no longer exists: {src}")
+        report_error("Warning", f"File disappeared before move: {filename}")
+        return False
+
     # Create destination folder and auto-rename on collision: "name (2).ext"
-    os.makedirs(dst_folder, exist_ok=True)
+    try:
+        os.makedirs(dst_folder, exist_ok=True)
+    except (OSError, PermissionError) as e:
+        logger.error(f"Cannot create destination folder {dst_folder}: {e}")
+        report_error("Error", f"Cannot create folder: {e}")
+        return False
+
     base, ext = os.path.splitext(filename)
     dst = os.path.join(dst_folder, filename)
     counter = 2
     while os.path.exists(dst):
         dst = os.path.join(dst_folder, f"{base} ({counter}){ext}")
         counter += 1
+
     try:
+        # Final check before move
+        if not os.path.exists(src):
+            logger.warning(f"Source file disappeared just before move: {src}")
+            return False
+
         shutil.move(src, dst)
-    except Exception as e:
+        logger.debug(f"Moved: {src} -> {dst}")
+        return True
+    except (IOError, OSError, PermissionError) as e:
+        logger.error(f"Failed to move {filename}: {e}")
         report_error("Error", f"Failed to move {filename}: {e}")
+        return False
 
 def update_progress(index, total):
+    """Update progress bar during file operations."""
     progress_bar["value"] = index
     root.update_idletasks()
-    if index == total:
-        messagebox.showinfo("Info", "Operation completed successfully")
 
 def show_preview(preview_items):
+    """Display preview of planned file moves in the preview panel."""
     preview_text.delete("1.0", tk.END)
     for _, folder, filename in preview_items:
         preview_text.insert(tk.END, f"{filename} → {folder}/\n")
 
 def smart_title(text):
+    """
+    Convert underscore_separated text to Smart_Title_Case.
+
+    Example: "my_file_name" -> "My_File_Name"
+    """
     return '_'.join(w if w.isupper() else w.capitalize() for w in text.split('_'))
 
 # === User mapping (Smart +) ===
 MAPPING_FILE = "folder_mappings.json"
 USER_MAP = {}
 def load_mappings():
+    """Load user-defined folder mappings from JSON file."""
     global USER_MAP
     try:
         with open(MAPPING_FILE, "r", encoding="utf-8") as f:
             USER_MAP = json.load(f)
-    except Exception:
+    except FileNotFoundError:
+        # First run - no mappings file yet
         USER_MAP = {}
+    except (json.JSONDecodeError, IOError) as e:
+        # Corrupted file or read error - start fresh but warn user
+        USER_MAP = {}
+        print(f"Warning: Could not load folder mappings: {e}")
 def save_mappings():
+    """Save user-defined folder mappings to JSON file."""
     try:
         with open(MAPPING_FILE, "w", encoding="utf-8") as f:
             json.dump(USER_MAP, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    except (IOError, OSError) as e:
+        # Critical: User's mappings not saved!
+        error_msg = f"Failed to save folder mappings: {e}"
+        print(f"ERROR: {error_msg}")
+        try:
+            messagebox.showerror("Save Error", error_msg)
+        except (tk.TclError, RuntimeError):
+            # GUI might not be ready yet - error already printed
+            pass
 def make_key(filename: str) -> str:
     base, _ = os.path.splitext(filename)
     base = re.sub(r'\s*[\-_]?\(\d+\)$', '', base)
@@ -131,6 +346,23 @@ load_mappings()
 # DETECTION HELPERS
 # ==============================
 def detect_folder_name(filename):
+    """
+    Detect folder name from filename using smart pattern recognition.
+
+    Analyzes delimiters (underscores, hyphens) and sequences to determine
+    logical grouping.
+
+    Args:
+        filename: Name of the file to analyze
+
+    Returns:
+        str or None: Detected folder name, or None if no pattern detected
+
+    Examples:
+        "image_001.jpg" -> "Image"
+        "photo-2024-05.png" -> "Photo-2024"
+        "report_final.pdf" -> "Report"
+    """
     base, _ = os.path.splitext(filename)
     base = re.sub(r'\s*[\-_]?\(\d+\)$', '', base).rstrip(' .')
     base = re.sub(r'(?<=[\-_])\d+[A-Za-z]?$', '', base).rstrip(' _-.')
@@ -156,6 +388,20 @@ def detect_folder_name(filename):
     return folder.rstrip(' .') if folder else None
 
 def extract_img_tag(filename):
+    """
+    Extract camera image tag from filename (IMG, DSC, DSCN, etc.).
+
+    Args:
+        filename: Name of the file to check
+
+    Returns:
+        str or None: Uppercase tag if found, None otherwise
+
+    Examples:
+        "IMG0123.JPG" -> "IMG"
+        "DSC_5432.jpg" -> "DSC"
+        "myfile.png" -> None
+    """
     m = re.search(r"(IMG|DSC|DSCN|DCS|DCSN)(?=\d|_|\.|$)", filename, re.IGNORECASE)
     return m.group(1).upper() if m else None
 
@@ -164,8 +410,19 @@ def extract_img_tag(filename):
 # ==============================
 def collect_files(source_dirs, logic_func):
     """
-    Plan moves (walk first, move later).
+    Collect all files to be moved and plan their destinations.
+
+    Walks source directories, applies pattern detection logic, and builds
+    a complete plan before any files are moved.
+
     Safe even when Target == Source, because we compute the plan before moving.
+
+    Args:
+        source_dirs: List of source directory paths
+        logic_func: Function(filename) -> folder_name to determine destination
+
+    Returns:
+        list: List of tuples (src_path, dest_folder, filename)
     """
     target_root = (target_entry.get() or "").strip()  # micro-polish: read once
     all_files = []
@@ -190,6 +447,21 @@ def collect_files(source_dirs, logic_func):
     return all_files
 
 def run_organizer(folder_logic, preview=False):
+    """
+    Main organizer function - validates inputs, builds plan, executes moves.
+
+    Performs comprehensive validation before operations:
+    - Path safety (no system directories)
+    - Operation validity (source != target, no recursion)
+    - Disk space and permissions
+
+    Args:
+        folder_logic: Function(filename) -> folder_name for pattern detection
+        preview: If True, shows plan without moving files
+
+    Returns:
+        None
+    """
     source_dirs = get_source_dirs()
     target_dir  = (target_entry.get() or "").strip()
 
@@ -199,6 +471,21 @@ def run_organizer(folder_logic, preview=False):
     if not target_dir or not os.path.isdir(target_dir):
         messagebox.showerror("Error", "Target directory not set or invalid.")
         return
+
+    # Validate target directory safety
+    is_safe, reason = is_safe_directory(target_dir)
+    if not is_safe:
+        messagebox.showerror("Unsafe Target", reason)
+        return
+
+    # Comprehensive operation validation
+    is_valid, error_msg = validate_operation(source_dirs, target_dir)
+    if not is_valid:
+        messagebox.showerror("Invalid Operation", error_msg)
+        logger.error(f"Operation validation failed: {error_msg}")
+        return
+
+    logger.info(f"Starting organization: {len(source_dirs)} source(s) -> {target_dir}")
 
     # Build plan
     logic = lambda fname: folder_logic(fname)  # returns RELATIVE folder name under target
@@ -211,24 +498,40 @@ def run_organizer(folder_logic, preview=False):
 
     total = len(plan)
     progress_bar["maximum"] = total
+    succeeded = 0
+    failed = 0
     for i, (src, dst_folder, fname) in enumerate(plan, 1):
-        move_file(src, dst_folder, fname)
+        if move_file(src, dst_folder, fname):
+            succeeded += 1
+        else:
+            failed += 1
         update_progress(i, total)
+
+    # Report results
+    logger.info(f"Operation complete: {succeeded} succeeded, {failed} failed")
+    if failed > 0:
+        messagebox.showwarning("Operation Complete with Errors",
+                              f"Completed with issues:\n{succeeded} files moved\n{failed} files failed")
+    else:
+        messagebox.showinfo("Success", f"Successfully organized {succeeded} files")
 
 # ==============================
 # LOGIC FUNCTIONS
 # ==============================
 def by_extension(filename):
+    """Group files by file extension (JPG, PDF, etc.)."""
     ext = os.path.splitext(filename)[1][1:]  # remove dot
     return ext.upper() if ext else "_NOEXT"
 
 def by_alphabet(filename):
+    """Group files by first character (A-Z, 0-9, symbols)."""
     first = filename[0].upper()
     if first.isalpha(): return first
     if first.isdigit(): return "0-9"
     return "!@#$"
 
 def by_numeric(filename):
+    """Group files by exact first character (0-9 each separate, A-Z each separate)."""
     name = filename.lstrip()
     if not name:
         return "!@#$"
@@ -243,9 +546,11 @@ def by_numeric(filename):
     return ch
 
 def by_img_dsc(filename):
+    """Group files by camera tag (IMG, DSC, etc.)."""
     return extract_img_tag(filename)  # None → skipped
 
 def by_detected(filename):
+    """Group files using smart pattern detection."""
     return detect_folder_name(filename)
 
 def by_detected_or_prompt(filename, allow_prompt=True):
@@ -334,6 +639,21 @@ def name_set_file_mixed(filename):
 def organize_zips():
     source_dirs = get_source_dirs()
     target_dir  = (target_entry.get() or "").strip()
+
+    # Validate target directory safety
+    if target_dir and os.path.isdir(target_dir):
+        is_safe, reason = is_safe_directory(target_dir)
+        if not is_safe:
+            messagebox.showerror("Unsafe Target", reason)
+            return
+
+    # Validate operation (source/target relationship, disk space, permissions)
+    is_valid, error_msg = validate_operation(source_dirs, target_dir)
+    if not is_valid:
+        logger.error(f"Validation failed for organize_zips: {error_msg}")
+        messagebox.showerror("Invalid Operation", error_msg)
+        return
+
     pattern = re.compile(r'(.+)\.zip-\d+', re.IGNORECASE)
     plan = []
     for source_dir in source_dirs:
@@ -348,13 +668,41 @@ def organize_zips():
         messagebox.showinfo("Organize Zips", "No multi-part zip files found.")
         return
     progress_bar["maximum"] = total
+    succeeded = 0
+    failed = 0
     for i, (src, dst_folder, fname) in enumerate(plan, 1):
-        move_file(src, dst_folder, fname)
+        if move_file(src, dst_folder, fname):
+            succeeded += 1
+        else:
+            failed += 1
         update_progress(i, total)
+
+    # Report results
+    logger.info(f"Organize zips complete: {succeeded} succeeded, {failed} failed")
+    if failed > 0:
+        messagebox.showwarning("Organize Complete with Errors",
+                              f"Completed with issues:\n{succeeded} files moved\n{failed} files failed")
+    else:
+        messagebox.showinfo("Success", f"Successfully organized {succeeded} zip files")
 
 def organize_top_level_only():
     source_dirs = get_source_dirs()
     target_dir  = (target_entry.get() or "").strip()
+
+    # Validate target directory safety
+    if target_dir and os.path.isdir(target_dir):
+        is_safe, reason = is_safe_directory(target_dir)
+        if not is_safe:
+            messagebox.showerror("Unsafe Target", reason)
+            return
+
+    # Validate operation (source/target relationship, disk space, permissions)
+    is_valid, error_msg = validate_operation(source_dirs, target_dir)
+    if not is_valid:
+        logger.error(f"Validation failed for organize_top_level_only: {error_msg}")
+        messagebox.showerror("Invalid Operation", error_msg)
+        return
+
     plan = []
     for source_dir in source_dirs:
         for filename in os.listdir(source_dir):
@@ -371,9 +719,22 @@ def organize_top_level_only():
         messagebox.showinfo("Top-Level", "No top-level files found to organize.")
         return
     progress_bar["maximum"] = len(plan)
+    succeeded = 0
+    failed = 0
     for i, (src, dst_folder, fname) in enumerate(plan, 1):
-        move_file(src, dst_folder, fname)
+        if move_file(src, dst_folder, fname):
+            succeeded += 1
+        else:
+            failed += 1
         update_progress(i, len(plan))
+
+    # Report results
+    logger.info(f"Top-level organize complete: {succeeded} succeeded, {failed} failed")
+    if failed > 0:
+        messagebox.showwarning("Organize Complete with Errors",
+                              f"Completed with issues:\n{succeeded} files moved\n{failed} files failed")
+    else:
+        messagebox.showinfo("Success", f"Successfully organized {succeeded} files")
 
 def extract_all_to_parent():
     source_dirs = get_source_dirs()
@@ -392,8 +753,13 @@ def extract_all_to_parent():
         messagebox.showinfo("Extract", "No files found in subfolders.")
         return
     progress_bar["maximum"] = len(plan)
+    succeeded = 0
+    failed = 0
     for i, (src, dst_folder, fname) in enumerate(plan, 1):
-        move_file(src, dst_folder, fname)
+        if move_file(src, dst_folder, fname):
+            succeeded += 1
+        else:
+            failed += 1
         update_progress(i, len(plan))
     # Clean up empties
     removed = 0
@@ -401,10 +767,19 @@ def extract_all_to_parent():
         for dpath, _, _ in os.walk(source, topdown=False):
             if os.path.abspath(dpath) != os.path.abspath(source) and not os.listdir(dpath):
                 try:
-                    os.rmdir(dpath); removed += 1
-                except Exception:
+                    os.rmdir(dpath)
+                    removed += 1
+                except (OSError, PermissionError):
+                    # Directory not empty or no permission - skip it
                     pass
-    messagebox.showinfo("Extract Complete", f"Moved {len(plan)} file(s). Removed {removed} empty folder(s).")
+
+    # Report results
+    logger.info(f"Extract complete: {succeeded} succeeded, {failed} failed, {removed} folders removed")
+    if failed > 0:
+        messagebox.showwarning("Extract Complete with Errors",
+                              f"Moved {succeeded} file(s), {failed} failed. Removed {removed} empty folder(s).")
+    else:
+        messagebox.showinfo("Extract Complete", f"Moved {succeeded} file(s). Removed {removed} empty folder(s).")
 
 def scan_sources():
     source_dirs = get_source_dirs()
@@ -419,7 +794,8 @@ def scan_sources():
             for f in files:
                 try:
                     rel = os.path.relpath(os.path.join(dirpath, f), src)
-                except Exception:
+                except (ValueError, OSError):
+                    # Can't compute relative path (different drives on Windows, etc.)
                     rel = os.path.join(dirpath, f)
                 preview_text.insert("end", f"{rel}\n")
                 total += 1
@@ -432,8 +808,9 @@ def scan_sources():
 def extract_up_levels():
     try:
         levels = int(levels_entry.get())
-        if levels < 1: raise ValueError
-    except Exception:
+        if levels < 1:
+            raise ValueError("Levels must be >= 1")
+    except (ValueError, TypeError) as e:
         messagebox.showerror("Extract Up", "Please enter a valid number of levels (>=1).")
         return
     source_dirs = get_source_dirs()
@@ -458,9 +835,13 @@ def extract_up_levels():
         messagebox.showinfo("Extract Up", "No files found to move for the chosen level(s).")
         return
     progress_bar["maximum"] = len(plan)
-    moved = 0
+    succeeded = 0
+    failed = 0
     for i, (src, dst_folder, fname) in enumerate(plan, 1):
-        move_file(src, dst_folder, fname); moved += 1
+        if move_file(src, dst_folder, fname):
+            succeeded += 1
+        else:
+            failed += 1
         update_progress(i, len(plan))
     # Remove empties
     removed_dirs = 0
@@ -469,9 +850,20 @@ def extract_up_levels():
             if os.path.abspath(dpath) == os.path.abspath(source):
                 continue
             if not os.listdir(dpath):
-                try: os.rmdir(dpath); removed_dirs += 1
-                except: pass
-    messagebox.showinfo("Extract Up Complete", f"Moved {moved} file(s). Removed {removed_dirs} empty folder(s).")
+                try:
+                    os.rmdir(dpath)
+                    removed_dirs += 1
+                except (OSError, PermissionError):
+                    # Directory not empty or no permission - skip it
+                    pass
+
+    # Report results
+    logger.info(f"Extract up complete: {succeeded} succeeded, {failed} failed, {removed_dirs} folders removed")
+    if failed > 0:
+        messagebox.showwarning("Extract Up Complete with Errors",
+                              f"Moved {succeeded} file(s), {failed} failed. Removed {removed_dirs} empty folder(s).")
+    else:
+        messagebox.showinfo("Extract Up Complete", f"Moved {succeeded} file(s). Removed {removed_dirs} empty folder(s).")
 # ───────── End Extract Up N Levels ─────────
 
 # ==============================
@@ -610,7 +1002,7 @@ def show_pattern_tester():
             for label, func in funcs_by_label.items():
                 try:
                     dest = func(name)
-                except Exception as e:
+                except (AttributeError, KeyError, ValueError, TypeError) as e:
                     dest = f"(error: {e})"
                 rows.append(f"{name}\n  {label:<24} → {dest or '(skip)'}\n")
         out.config(state="normal"); out.delete("1.0", "end")
