@@ -1,0 +1,69 @@
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+# ──────────────────────────────────────────────────────────────────
+# TYPE (required):
+#   feat     - New feature
+#   fix      - Bug fix
+#   docs     - Documentation only
+#   style    - Formatting, missing semicolons, etc (no code change)
+#   refactor - Code change that neither fixes a bug nor adds a feature
+#   perf     - Performance improvement
+#   test     - Adding missing tests
+#   chore    - Build process or auxiliary tool changes
+#   revert   - Revert to a commit
+#
+# SCOPE (optional):
+#   architect - Architectural decisions/reviews
+#   validator - Validation and testing
+#   mentor    - Implementation and fixes
+#   v6.0      - Version 6.0 related
+#   v6.1      - Version 6.1 related
+#   tests     - Test suite changes
+#   docs      - Documentation updates
+#
+# SUBJECT (required):
+#   - Use imperative, present tense: "change" not "changed" nor "changes"
+#   - Don't capitalize first letter
+#   - No period (.) at the end
+#   - Maximum 50 characters
+#
+# BODY (optional):
+#   - Wrap at 72 characters
+#   - Explain WHAT and WHY (not HOW)
+#   - Separate from subject with blank line
+#
+# FOOTER (optional):
+#   - Reference issues, tickets, agent decisions
+#   - Breaking changes: "BREAKING CHANGE: description"
+#   - Refs: Architect-2025-11-01, Critical-#36, etc.
+#
+# EXAMPLES:
+# ──────────────────────────────────────────────────────────────────
+# feat(v6.1): add Windows reserved name sanitization
+#
+# Implement sanitize_folder_name() to prevent CON, PRN, AUX, etc.
+# folder creation failures on Windows. Applied to all pattern
+# detection functions.
+#
+# Closes: Critical-#36
+# Refs: Architect review 2025-11-01
+# ──────────────────────────────────────────────────────────────────
+# fix(validator): correct test imports from v6.0 to v6.1
+#
+# Test suite was importing from master_file_6 instead of
+# master_file_6.1, causing false test results.
+#
+# BREAKING CHANGE: Test suite now validates correct version
+# Refs: Architect rejection report
+# ──────────────────────────────────────────────────────────────────
+# docs(architect): document Critical #36 for all agents
+#
+# Added comprehensive explanation of Windows reserved names issue,
+# impact assessment, and fix requirements. Clarifies why this was
+# not a v6.0 blocker but required for v6.1.
+#
+# Refs: Validator question 2025-11-01
+# ──────────────────────────────────────────────────────────────────
