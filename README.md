@@ -53,8 +53,8 @@ File Organizer is a desktop application that automatically organizes your files 
 **Option 1: Run from source**
 ```bash
 # Clone repository
-git clone https://github.com/Emfiloel/my-monetization-project.git
-cd my-monetization-project
+git clone https://github.com/Emfiloel/File-Org.git
+cd File-Org
 
 # Install dependencies
 pip install -r requirements.txt
@@ -338,8 +338,8 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/Emfiloel/my-monetization-project/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Emfiloel/my-monetization-project/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Emfiloel/File-Org/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Emfiloel/File-Org/discussions)
 
 ---
 

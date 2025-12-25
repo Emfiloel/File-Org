@@ -16,7 +16,7 @@ setup(
     description="Professional-grade file organization tool with intelligent pattern detection and AI learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Emfiloel/my-monetization-project",
+    url="https://github.com/Emfiloel/File-Org",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[
