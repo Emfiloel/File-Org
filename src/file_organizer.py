@@ -2026,6 +2026,183 @@ def create_alphanumeric_folders():
     messagebox.showinfo("Folder Creation Complete", msg)
 
 
+# ==============================
+# CUSTOM FOLDER HIERARCHY (v7.0)
+# ==============================
+def parse_folder_hierarchy(hierarchy_string: str) -> List[str]:
+    """
+    Parse folder hierarchy string into list of folder names.
+
+    Args:
+        hierarchy_string: Hierarchy string with dash delimiter (e.g., "TMC-Aileron-LH")
+
+    Returns:
+        List of folder names in order
+
+    Example:
+        >>> parse_folder_hierarchy("TMC-Aileron-LH")
+        ["TMC", "Aileron", "LH"]
+    """
+    if not hierarchy_string:
+        return []
+
+    # Split by dash delimiter and strip whitespace
+    folders = [folder.strip() for folder in hierarchy_string.split('-')]
+
+    # Filter out empty strings
+    folders = [f for f in folders if f]
+
+    return folders
+
+
+def generate_numbered_folder_names(count: int) -> List[str]:
+    """
+    Generate numbered folder names with zero-padding.
+
+    Args:
+        count: Number of folders to generate
+
+    Returns:
+        List of numbered folder names (e.g., ["001", "002", "003"])
+
+    Example:
+        >>> generate_numbered_folder_names(5)
+        ["001", "002", "003", "004", "005"]
+    """
+    if count <= 0:
+        return []
+
+    # Determine padding width based on count
+    width = len(str(count))
+    if width < 3:
+        width = 3  # Minimum 3 digits
+
+    return [str(i).zfill(width) for i in range(1, count + 1)]
+
+
+def create_custom_hierarchy(base_path: str, hierarchy: str, num_folders: int = 0) -> Tuple[bool, str]:
+    """
+    Create custom folder hierarchy with optional numbered subfolders.
+
+    Args:
+        base_path: Base directory where hierarchy will be created
+        hierarchy: Hierarchy string (e.g., "TMC-Aileron-LH")
+        num_folders: Number of numbered folders to create in final level
+
+    Returns:
+        Tuple of (success, message)
+
+    Example:
+        Create "TMC/Aileron/LH/" with folders 001-050:
+        >>> create_custom_hierarchy("/path", "TMC-Aileron-LH", 50)
+    """
+    try:
+        # Parse hierarchy
+        folders = parse_folder_hierarchy(hierarchy)
+
+        if not folders:
+            return False, "No folders specified in hierarchy"
+
+        # Build nested path
+        current_path = base_path
+        for folder in folders:
+            # Sanitize folder name
+            safe_folder = sanitize_folder_name(folder)
+            current_path = os.path.join(current_path, safe_folder)
+
+            # Create folder if it doesn't exist
+            if not os.path.exists(current_path):
+                os.makedirs(current_path)
+
+        # Create numbered folders if requested
+        if num_folders > 0:
+            numbered_folders = generate_numbered_folder_names(num_folders)
+
+            for numbered in numbered_folders:
+                numbered_path = os.path.join(current_path, numbered)
+                if not os.path.exists(numbered_path):
+                    os.makedirs(numbered_path)
+
+        # Build success message
+        hierarchy_display = " → ".join(folders)
+        if num_folders > 0:
+            hierarchy_display += f" (with {num_folders} numbered folders)"
+
+        return True, f"Successfully created hierarchy:\n{hierarchy_display}"
+
+    except Exception as e:
+        return False, f"Error creating hierarchy: {str(e)}"
+
+
+def create_custom_hierarchy_gui():
+    """
+    GUI wrapper for custom folder hierarchy creation.
+
+    Prompts user for:
+    1. Hierarchy string (e.g., "TMC-Aileron-LH")
+    2. Number of folders in final level (optional)
+    """
+    target_dir = (target_entry.get() or "").strip()
+
+    if not target_dir:
+        messagebox.showerror("Error", "Please select a target directory first.")
+        return
+
+    if not os.path.exists(target_dir):
+        messagebox.showerror("Error", f"Target directory does not exist:\n{target_dir}")
+        return
+
+    # Prompt for hierarchy
+    hierarchy = simpledialog.askstring(
+        "Custom Folder Hierarchy",
+        "Enter folder hierarchy separated by dashes (-):\n\n"
+        "Example: TMC-Aileron-LH\n"
+        "Creates: TMC/Aileron/LH/\n\n"
+        "Hierarchy:",
+        parent=root
+    )
+
+    if not hierarchy:
+        return  # User cancelled
+
+    # Prompt for number of folders in final level
+    num_folders_str = simpledialog.askstring(
+        "Numbered Folders",
+        f"How many numbered folders to create in '{hierarchy.split('-')[-1]}'?\n\n"
+        "Enter a number (e.g., 50 creates folders 001-050)\n"
+        "Or press Cancel to skip numbered folders:\n\n"
+        "Number of folders:",
+        parent=root
+    )
+
+    # Parse number of folders
+    num_folders = 0
+    if num_folders_str:
+        try:
+            num_folders = int(num_folders_str)
+            if num_folders < 0:
+                messagebox.showerror("Error", "Number of folders must be positive")
+                return
+            if num_folders > 1000:
+                if not messagebox.askyesno(
+                    "Large Number",
+                    f"You're creating {num_folders} folders. Continue?",
+                    parent=root
+                ):
+                    return
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid number")
+            return
+
+    # Create hierarchy
+    success, message = create_custom_hierarchy(target_dir, hierarchy, num_folders)
+
+    if success:
+        messagebox.showinfo("Success", f"✓ {message}", parent=root)
+    else:
+        messagebox.showerror("Error", f"❌ {message}", parent=root)
+
+
 def search_and_collect():
     """
     Search for files matching a custom pattern and collect them into a folder.
@@ -3471,6 +3648,7 @@ sections = {
     ],
     "📁 Folder Tools": [
         ("Create A-Z + 0-9 Folders", create_alphanumeric_folders),
+        ("Create Custom Hierarchy", create_custom_hierarchy_gui),
     ],
     "🔍 Pattern Search": [
         ("Search & Collect by Pattern", search_and_collect),
