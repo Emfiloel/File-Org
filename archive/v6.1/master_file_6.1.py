@@ -1,23 +1,13 @@
 # ==============================
-# FILE ORGANIZER v7.0
-# Professional File Organization Tool
+# FILE ORGANIZER - MASTER FILE 6.1
+# ENHANCED ARCHITECTURE EDITION
 # ==============================
-# VERSION 7.0 FEATURES:
-# 🧠 AI Pattern Learning (intelligent 4-tier detection system)
-# 🔀 Advanced Collision Detection (date-aware EXIF duplicate handling)
-# 🏠 Enhanced In-Place Organization (smart subfolder preservation)
-# 📊 Pattern Analytics Dashboard
-# 🗂️ Code Consolidation (82% reduction in duplication)
-#
-# VERSION 6.2 FEATURES (PRESERVED):
-# ✅ In-Place Organization Mode (organize within same folder)
-# ✅ Skip folders with # prefix (e.g., #Sort)
-#
-# VERSION 6.1 FEATURES (PRESERVED):
-# ✅ VERSION constant for consistent labeling
-# ✅ Case-insensitive Windows path security check
-# ✅ Windows reserved folder name sanitization (Critical #36 fix)
-# ✅ Improved duplicate cache documentation
+# VERSION 6.1 QUICK WINS:
+# ✨ VERSION constant for consistent labeling
+# ✨ Case-insensitive Windows path security check
+# ✨ Windows reserved folder name sanitization (Critical #36 fix)
+# ✨ Improved duplicate cache documentation
+# ✨ Updated help text for v6.1
 #
 # VERSION 6 FEATURES (PRESERVED):
 # ✅ Threading for responsive GUI
@@ -59,7 +49,7 @@ from typing import Iterator, Tuple, Dict, List, Optional, Callable, Any, Union
 # ==============================
 # VERSION & CONSTANTS
 # ==============================
-VERSION: str = "v7.0"
+VERSION: str = "v6.1 Enhanced Architecture"
 
 # Note on duplicate cache semantics:
 # DUPLICATE_DETECTOR.clear_session() is called per operation run,
@@ -369,8 +359,8 @@ class DuplicateDetector:
         Check if file is duplicate.
         Returns: (is_duplicate, duplicate_type)
         - (False, '') = First occurrence
-        - (True, 'DUPES') = Same name + size + hash (converted to !Dupes by caller)
-        - (True, 'DUPE SIZE') = Same name + different size (converted to !Dupes Size by caller)
+        - (True, 'DUPES') = Same name + size + hash
+        - (True, 'DUPE SIZE') = Same name + different size
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -423,138 +413,6 @@ class DuplicateDetector:
 
 # Global duplicate detector
 DUPLICATE_DETECTOR = DuplicateDetector()
-
-# ==============================
-# CONSOLIDATION: MESSAGES & VALIDATION HELPERS
-# ==============================
-class Messages:
-    """Centralized user messaging - consolidates 34+ messagebox calls"""
-
-    # Error messages
-    NO_SOURCE = "Please select at least one source directory."
-    NO_TARGET = "Please select a target directory first."
-    INVALID_SOURCE = "Source directory does not exist or is not accessible."
-    INVALID_TARGET = "Target directory does not exist or is not accessible."
-    SAME_SOURCE_TARGET = "Source and target directories cannot be the same."
-    PROTECTED_DIRECTORY = "Cannot organize protected system directories."
-    NO_FILES = "No files found to organize in the selected directory."
-
-    # Success messages
-    OPERATION_SUCCESS = "Operation completed successfully!"
-    UNDO_SUCCESS = "Undo operation completed successfully!"
-
-    # Info messages
-    OPERATION_CANCELLED = "Operation cancelled by user."
-    PREVIEW_MODE = "Preview mode - no files will be moved."
-
-    @staticmethod
-    def error(msg: str, title: str = "Error"):
-        """Show error message"""
-        messagebox.showerror(title, msg)
-
-    @staticmethod
-    def info(msg: str, title: str = "Information"):
-        """Show info message"""
-        messagebox.showinfo(title, msg)
-
-    @staticmethod
-    def warning(msg: str, title: str = "Warning"):
-        """Show warning message"""
-        messagebox.showwarning(title, msg)
-
-    @staticmethod
-    def confirm(msg: str, title: str = "Confirm") -> bool:
-        """Show confirmation dialog"""
-        return messagebox.askyesno(title, msg)
-
-
-def validate_sources(show_errors: bool = True) -> Tuple[bool, List[str]]:
-    """
-    Validate source directories - consolidates 6 duplicate validation blocks.
-
-    Args:
-        show_errors: Whether to show error dialogs
-
-    Returns:
-        (is_valid, list_of_source_paths)
-    """
-    sources_text = source_entry.get().strip()
-
-    if not sources_text:
-        if show_errors:
-            Messages.error(Messages.NO_SOURCE)
-        return False, []
-
-    # Split by newlines or semicolons
-    sources = [s.strip() for s in re.split(r'[\n;]', sources_text) if s.strip()]
-
-    if not sources:
-        if show_errors:
-            Messages.error(Messages.NO_SOURCE)
-        return False, []
-
-    # Validate each source
-    for src in sources:
-        if not os.path.isdir(src):
-            if show_errors:
-                Messages.error(f"Source directory does not exist:\n{src}")
-            return False, []
-
-    return True, sources
-
-
-def validate_target(show_errors: bool = True) -> Tuple[bool, str]:
-    """
-    Validate target directory - consolidates 6 duplicate validation blocks.
-
-    Args:
-        show_errors: Whether to show error dialogs
-
-    Returns:
-        (is_valid, target_path)
-    """
-    target = target_entry.get().strip()
-
-    if not target:
-        if show_errors:
-            Messages.error(Messages.NO_TARGET)
-        return False, ""
-
-    if not os.path.isdir(target):
-        if show_errors:
-            Messages.error(Messages.INVALID_TARGET)
-        return False, ""
-
-    return True, target
-
-
-class OperationResult:
-    """Build and display operation results - consolidates 5 duplicate result displays"""
-
-    def __init__(self, title: str = "Operation Results"):
-        self.title = title
-        self.lines = []
-
-    def add(self, label: str, value: int, condition: bool = True) -> 'OperationResult':
-        """Add a result line (chainable)"""
-        if condition:
-            self.lines.append(f"{label}: {value}")
-        return self
-
-    def add_text(self, text: str, condition: bool = True) -> 'OperationResult':
-        """Add custom text line (chainable)"""
-        if condition:
-            self.lines.append(text)
-        return self
-
-    def show(self):
-        """Display the results"""
-        if self.lines:
-            Messages.info("\n".join(self.lines), self.title)
-
-    def __str__(self) -> str:
-        """Get results as string"""
-        return "\n".join(self.lines)
 
 # ==============================
 # THREADING SUPPORT
@@ -618,94 +476,14 @@ paths_box.grid(row=1, column=0, columnspan=3, sticky="ew", padx=0, pady=(8, 12))
 paths_box.columnconfigure(1, weight=1)
 
 ttk.Label(paths_box, text="Source Directory(ies):").grid(row=0, column=0, sticky="e", padx=(8,6), pady=6)
-source_entry = ttk.Combobox(paths_box, values=[])  # v6.3: Recent directories dropdown
+source_entry = ttk.Entry(paths_box)
 source_entry.grid(row=0, column=1, sticky="ew", padx=6, pady=6)
-
-def browse_source():
-    """Browse for source directory and add to history"""
-    path = filedialog.askdirectory()
-    if path:
-        source_entry.set(path)
-        add_to_recent('source', path)
-
-ttk.Button(paths_box, text="Browse", command=browse_source).grid(row=0, column=2, padx=(6,8), pady=6)
+ttk.Button(paths_box, text="Browse", command=lambda: source_entry.insert(0, filedialog.askdirectory())).grid(row=0, column=2, padx=(6,8), pady=6)
 
 ttk.Label(paths_box, text="Target Directory:").grid(row=1, column=0, sticky="e", padx=(8,6), pady=6)
-target_entry = ttk.Combobox(paths_box, values=[])  # v6.3: Recent directories dropdown
+target_entry = ttk.Entry(paths_box)
 target_entry.grid(row=1, column=1, sticky="ew", padx=6, pady=6)
-
-def browse_target():
-    """Browse for target directory and add to history"""
-    path = filedialog.askdirectory()
-    if path:
-        target_entry.set(path)
-        add_to_recent('target', path)
-
-ttk.Button(paths_box, text="Browse", command=browse_target).grid(row=1, column=2, padx=(6,8), pady=6)
-
-# In-Place Organization checkbox
-inplace_organize_var = tk.BooleanVar(value=False)
-ttk.Checkbutton(
-    paths_box,
-    text="✓ Organize within same folder (source = target)",
-    variable=inplace_organize_var
-).grid(row=2, column=0, columnspan=3, sticky="w", padx=(8,6), pady=(6,8))
-
-# Folder creation tool variables (v6.3)
-var_create_az = tk.BooleanVar(value=True)
-var_create_09 = tk.BooleanVar(value=True)
-var_create_special = tk.BooleanVar(value=True)
-var_folder_case = tk.StringVar(value="upper")
-
-# Pattern search variables (v6.3)
-var_search_pattern = tk.StringVar(value="")
-var_search_folder = tk.StringVar(value="")
-
-# ==============================
-# RECENT DIRECTORIES (v6.3)
-# ==============================
-def load_recent_directories():
-    """Load recent directories from config and populate dropdowns"""
-    recent = CONFIG.get("recent_directories", {"source": [], "target": []})
-    source_recent = recent.get("source", [])
-    target_recent = recent.get("target", [])
-
-    source_entry['values'] = source_recent[:10]  # Keep last 10
-    target_entry['values'] = target_recent[:10]
-
-    # Set first item as default if available
-    if source_recent:
-        source_entry.set(source_recent[0])
-    if target_recent:
-        target_entry.set(target_recent[0])
-
-def add_to_recent(entry_type, path):
-    """Add a directory to recent history"""
-    if not path or not os.path.isdir(path):
-        return
-
-    recent = CONFIG.get("recent_directories", {"source": [], "target": []})
-    if entry_type not in recent:
-        recent[entry_type] = []
-
-    # Remove if already exists (will be re-added to front)
-    if path in recent[entry_type]:
-        recent[entry_type].remove(path)
-
-    # Add to front
-    recent[entry_type].insert(0, path)
-
-    # Keep only last 10
-    recent[entry_type] = recent[entry_type][:10]
-
-    # Save to config
-    CONFIG.set("recent_directories", recent)
-
-    # Update dropdown
-    if entry_type == "source":
-        source_entry['values'] = recent[entry_type]
-    else:
-        target_entry['values'] = recent[entry_type]
+ttk.Button(paths_box, text="Browse", command=lambda: target_entry.insert(0, filedialog.askdirectory())).grid(row=1, column=2, padx=(6,8), pady=6)
 
 # ==============================
 # CORE HELPERS
@@ -714,21 +492,7 @@ def get_source_dirs() -> List[str]:
     return [d.strip() for d in source_entry.get().split(',') if os.path.isdir(d.strip())]
 
 def should_skip_folder(folder_name: str) -> bool:
-    """
-    Check if folder should be skipped.
-
-    Skips:
-    - Folders in config skip_folders list
-    - Folders starting with # immediately followed by non-space (e.g., #Sort, #Archive)
-    - Does NOT skip folders with space after # (e.g., "# Sorting")
-    """
-    # Skip folders starting with # followed immediately by non-space character
-    # #Sort → skip (# followed by S)
-    # # Sorting → do NOT skip (# followed by space)
-    if folder_name.startswith('#') and (len(folder_name) == 1 or folder_name[1] != ' '):
-        return True
-
-    # Skip folders in config list
+    """Check if folder should be skipped"""
     skip_list = CONFIG.get('skip_folders', ['Sort'])
     return folder_name in skip_list
 
@@ -824,53 +588,13 @@ def get_file_size(filepath: str) -> int:
     except Exception:
         return -1
 
-def get_file_datetime(filepath: str) -> Optional[datetime]:
-    """
-    Extract date/time from file with priority:
-    1. EXIF Date/Time Original (for photos)
-    2. File modification time (fallback)
-
-    Returns datetime object or None
-    """
-    try:
-        # Try to get EXIF data for images
-        if filepath.lower().endswith(('.jpg', '.jpeg', '.tiff', '.tif')):
-            try:
-                # Try to import PIL for EXIF data
-                from PIL import Image
-                from PIL.ExifTags import TAGS
-
-                img = Image.open(filepath)
-                exif_data = img._getexif()
-
-                if exif_data:
-                    # Look for DateTimeOriginal tag (36867) or DateTime tag (306)
-                    for tag_id, value in exif_data.items():
-                        tag_name = TAGS.get(tag_id, tag_id)
-                        if tag_name in ('DateTimeOriginal', 'DateTime'):
-                            # Parse EXIF datetime format: "2024:01:15 10:30:00"
-                            return datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
-            except Exception:
-                pass  # PIL not available or EXIF read failed
-
-        # Fallback: use file modification time
-        mtime = os.path.getmtime(filepath)
-        return datetime.fromtimestamp(mtime)
-
-    except Exception:
-        return None
-
 def move_file(src: str, dst_folder: str, filename: str) -> bool:
     """
-    Move file with advanced collision detection and duplicate handling.
+    Move file with TOCTOU-safe atomic operations and logging.
 
-    Collision Logic:
-    - [d] suffix: Same size (exact duplicate indicator)
-    - {d} suffix: Different size (different version indicator)
-    - !Dupes folder: Same name + same size + same date
-    - !Dupes Size folder: Same name + different size + same date
+    Uses atomic rename operations to prevent race conditions.
     """
-    # Pre-flight check: verify source still exists
+    # Pre-flight check: verify source still exists (race condition protection)
     if not os.path.exists(src):
         LOGGER.log_error("Source file no longer exists", filename)
         return False
@@ -890,89 +614,36 @@ def move_file(src: str, dst_folder: str, filename: str) -> bool:
     base, ext = os.path.splitext(filename)
     dst = os.path.join(dst_folder, filename)
 
-    # Check for collision
-    if os.path.exists(dst):
-        # Collision detected - apply advanced duplicate detection
-        src_size = get_file_size(src)
-        dst_size = get_file_size(dst)
-        src_date = get_file_datetime(src)
-        dst_date = get_file_datetime(dst)
+    # TOCTOU-safe collision handling using atomic operations
+    counter = 2
+    while True:
+        try:
+            # Final check before move (double-check pattern)
+            if not os.path.exists(src):
+                LOGGER.log_error("Source file disappeared just before move", filename)
+                return False
 
-        # Determine if same size
-        same_size = (src_size == dst_size)
+            # Attempt atomic move
+            # On Windows, shutil.move may not be fully atomic, but we check-then-move
+            # For true atomicity across platforms, we'd use os.rename() with same filesystem check
+            shutil.move(src, dst)
 
-        # Determine if same date (within 1 second tolerance)
-        same_date = False
-        if src_date and dst_date:
-            time_diff = abs((src_date - dst_date).total_seconds())
-            same_date = (time_diff < 1)  # Same if within 1 second
+            # Success! Log the move
+            size = get_file_size(dst)
+            LOGGER.log_move(src, dst, size)
+            return True
 
-        # Decision matrix
-        target_root = os.path.dirname(dst_folder)
-
-        if same_size and same_date:
-            # Case: Same size + same date → !Dupes folder with [d] suffix
-            dup_folder = os.path.join(target_root, "!Dupes")
-            os.makedirs(dup_folder, exist_ok=True)
-            new_filename = f"{base}[d]{ext}"
-            dst = os.path.join(dup_folder, new_filename)
-
-        elif not same_size and same_date:
-            # Case: Different size + same date → !Dupes Size folder with {d} suffix
-            dup_folder = os.path.join(target_root, "!Dupes Size")
-            os.makedirs(dup_folder, exist_ok=True)
-            new_filename = f"{base}{{d}}{ext}"
-            dst = os.path.join(dup_folder, new_filename)
-
-        elif same_size and not same_date:
-            # Case: Same size + different date → Keep in target folder with [d] suffix
-            new_filename = f"{base}[d]{ext}"
-            dst = os.path.join(dst_folder, new_filename)
-
-        else:
-            # Case: Different size + different date → Keep in target folder with {d} suffix
-            new_filename = f"{base}{{d}}{ext}"
-            dst = os.path.join(dst_folder, new_filename)
-
-        # Handle nested collisions (if [d] or {d} already exists)
-        counter = 2
-        while os.path.exists(dst):
-            # Add counter to suffix: file[d]2.jpg, file{d}2.jpg, etc.
-            if same_size:
-                new_filename = f"{base}[d]{counter}{ext}"
-            else:
-                new_filename = f"{base}{{d}}{counter}{ext}"
-
-            # Update dst path
-            if same_size and same_date:
-                dst = os.path.join(os.path.join(target_root, "!Dupes"), new_filename)
-            elif not same_size and same_date:
-                dst = os.path.join(os.path.join(target_root, "!Dupes Size"), new_filename)
-            else:
-                dst = os.path.join(dst_folder, new_filename)
-
+        except FileExistsError:
+            # Collision detected - increment counter and try again atomically
+            dst = os.path.join(dst_folder, f"{base} ({counter}){ext}")
             counter += 1
-            if counter > 100:
+            if counter > 100:  # Safety limit
                 LOGGER.log_error(f"Too many collisions (>{counter})", filename)
                 return False
 
-    # Attempt move
-    try:
-        # Final check before move
-        if not os.path.exists(src):
-            LOGGER.log_error("Source file disappeared just before move", filename)
+        except (IOError, OSError, PermissionError) as e:
+            LOGGER.log_error(f"Failed to move: {e}", filename)
             return False
-
-        shutil.move(src, dst)
-
-        # Success! Log the move
-        size = get_file_size(dst)
-        LOGGER.log_move(src, dst, size)
-        return True
-
-    except (IOError, OSError, PermissionError) as e:
-        LOGGER.log_error(f"Failed to move: {e}", filename)
-        return False
 
 def update_progress(index: int, total: int):
     progress_bar["value"] = index
@@ -1152,389 +823,6 @@ def detect_sequential_pattern(filename: str) -> Optional[str]:
     return None
 
 # ==============================
-# INTELLIGENT PATTERN SCANNER (CONSOLIDATION)
-# ==============================
-class PatternLearner:
-    """Machine learning for file patterns - learns from user choices"""
-
-    def __init__(self):
-        self.patterns_file = DATA_DIR.get_path("learned_patterns.json")
-        self.patterns = self._load_patterns()
-
-    def _load_patterns(self) -> Dict[str, Dict[str, Any]]:
-        """Load learned patterns from file"""
-        if self.patterns_file.exists():
-            try:
-                with open(self.patterns_file, 'r') as f:
-                    return json.load(f)
-            except Exception:
-                return {}
-        return {}
-
-    def _save_patterns(self):
-        """Save learned patterns to file"""
-        try:
-            with open(self.patterns_file, 'w') as f:
-                json.dump(self.patterns, f, indent=2)
-        except Exception as e:
-            print(f"Failed to save learned patterns: {e}")
-
-    def extract_signature(self, filename: str) -> str:
-        """
-        Extract pattern signature from filename.
-
-        Examples:
-            vacation-001.jpg → "TEXT-NNN"
-            IMG_1234.jpg → "IMG_NNNN"
-            file001.pdf → "TEXTNNN"
-            031204-0022.jpg → "NNNNNN-NNNN"
-        """
-        base, _ = os.path.splitext(filename)
-
-        # Build signature: TEXT, N (number), special chars preserved
-        signature = []
-        i = 0
-        while i < len(base):
-            char = base[i]
-            if char.isdigit():
-                # Count consecutive digits
-                count = 0
-                while i < len(base) and base[i].isdigit():
-                    count += 1
-                    i += 1
-                signature.append('N' * count)
-            elif char.isalpha():
-                # Count consecutive letters
-                text_part = []
-                while i < len(base) and base[i].isalpha():
-                    text_part.append(base[i])
-                    i += 1
-                # If uppercase camera tag (IMG, DSC), keep as-is
-                text_str = ''.join(text_part)
-                if text_str.isupper() and len(text_str) <= 5:
-                    signature.append(text_str)
-                else:
-                    signature.append('TEXT')
-            else:
-                # Preserve special characters
-                signature.append(char)
-                i += 1
-
-        return ''.join(signature)
-
-    def learn(self, filename: str, folder: str):
-        """Learn from user's folder choice"""
-        signature = self.extract_signature(filename)
-
-        if signature not in self.patterns:
-            self.patterns[signature] = {
-                "folder": folder,
-                "count": 1,
-                "examples": [filename]
-            }
-        else:
-            # Update existing pattern
-            pattern = self.patterns[signature]
-            if pattern["folder"] == folder:
-                pattern["count"] += 1
-            else:
-                # User chose different folder - reset or update based on frequency
-                if pattern["count"] > 3:
-                    # Strong pattern, create alternate
-                    alt_sig = f"{signature}_ALT"
-                    self.patterns[alt_sig] = {"folder": folder, "count": 1, "examples": [filename]}
-                else:
-                    # Weak pattern, replace
-                    pattern["folder"] = folder
-                    pattern["count"] = 1
-
-            # Keep only last 5 examples
-            if "examples" not in pattern:
-                pattern["examples"] = []
-            pattern["examples"].append(filename)
-            pattern["examples"] = pattern["examples"][-5:]
-
-        self._save_patterns()
-
-    def predict(self, filename: str) -> Optional[Tuple[str, float]]:
-        """
-        Predict folder based on learned patterns.
-
-        Returns:
-            (folder_name, confidence) or None
-        """
-        signature = self.extract_signature(filename)
-
-        if signature in self.patterns:
-            pattern = self.patterns[signature]
-            confidence = min(0.99, 0.80 + (pattern["count"] * 0.03))  # 0.80 to 0.99
-            return pattern["folder"], confidence
-
-        return None
-
-
-class IntelligentPatternDetector:
-    """Unified pattern detection with learning - consolidates 3 pattern detection methods"""
-
-    def __init__(self):
-        self.learner = PatternLearner()
-
-    def detect(self, filename: str) -> Tuple[Optional[str], float, str]:
-        """
-        Detect folder for filename with confidence scoring.
-
-        Returns:
-            (folder_name, confidence, method)
-
-        Detection priority:
-            1. Learned patterns (0.80-0.99 confidence)
-            2. Camera tags (0.95 confidence)
-            3. Sequential patterns (0.90 confidence)
-            4. Smart delimiter patterns (0.80 confidence)
-        """
-        # Priority 1: Check learned patterns
-        learned = self.learner.predict(filename)
-        if learned:
-            folder, confidence = learned
-            return folder, confidence, "Learned Pattern"
-
-        # Priority 2: Camera tags (IMG, DSC, etc.)
-        camera_tag = extract_img_tag(filename)
-        if camera_tag:
-            return camera_tag, 0.95, "Camera Tag"
-
-        # Priority 3: Sequential patterns
-        sequential = detect_sequential_pattern(filename)
-        if sequential:
-            return sequential, 0.90, "Sequential Pattern"
-
-        # Priority 4: Smart delimiter patterns
-        smart = detect_folder_name(filename)
-        if smart:
-            return smart, 0.80, "Smart Pattern"
-
-        # No pattern detected
-        return None, 0.0, "No Pattern"
-
-    def learn_from_user_choice(self, filename: str, chosen_folder: str):
-        """Learn from user's manual folder choice"""
-        self.learner.learn(filename, chosen_folder)
-
-# Global intelligent pattern detector
-INTELLIGENT_DETECTOR = IntelligentPatternDetector()
-
-# ==============================
-# DATABASE SCANNER (LEARNING MODE)
-# ==============================
-class DatabaseScanner:
-    """
-    Scans directory structure to learn organization patterns.
-
-    - Reads existing folder structures
-    - Identifies organized vs unorganized areas
-    - Learns from your current organization
-    - Does NOT move files (read-only analysis)
-    """
-
-    def __init__(self):
-        self.scan_results = {
-            "total_files": 0,
-            "total_folders": 0,
-            "organized_files": 0,
-            "unorganized_files": 0,
-            "patterns_found": {},
-            "folder_structure": {},
-            "unorganized_areas": [],
-            "learned_mappings": {}
-        }
-        self.unorganized_keywords = ["sorting", "sort", "unsorted", "to organize", "to sort", "temp", "temporary"]
-
-    def is_unorganized_folder(self, folder_name: str) -> bool:
-        """Check if folder name indicates unorganized area"""
-        folder_lower = folder_name.lower()
-        return any(keyword in folder_lower for keyword in self.unorganized_keywords)
-
-    def scan_directory(self, root_path: str, progress_callback: Optional[Callable] = None) -> dict:
-        """
-        Scan directory and learn organization patterns.
-
-        Returns scan results with:
-        - Total files/folders count
-        - Organized vs unorganized areas
-        - Detected patterns
-        - Learned folder mappings
-        """
-        self.scan_results = {
-            "total_files": 0,
-            "total_folders": 0,
-            "organized_files": 0,
-            "unorganized_files": 0,
-            "patterns_found": {},
-            "folder_structure": {},
-            "unorganized_areas": [],
-            "learned_mappings": {},
-            "scan_date": datetime.now().isoformat(),
-            "root_path": root_path
-        }
-
-        file_count = 0
-
-        for dirpath, dirnames, filenames in os.walk(root_path):
-            # Skip system folders
-            dirnames[:] = [d for d in dirnames if not should_skip_folder(d)]
-
-            self.scan_results["total_folders"] += len(dirnames)
-
-            # Check if current folder is unorganized area
-            folder_name = os.path.basename(dirpath)
-            is_unorganized = self.is_unorganized_folder(folder_name)
-
-            if is_unorganized:
-                self.scan_results["unorganized_areas"].append({
-                    "path": dirpath,
-                    "folder": folder_name,
-                    "file_count": len(filenames)
-                })
-
-            # Analyze files in this directory
-            for filename in filenames:
-                file_count += 1
-                self.scan_results["total_files"] += 1
-
-                if progress_callback and file_count % 100 == 0:
-                    progress_callback(file_count, filename)
-
-                # Classify as organized or unorganized
-                if is_unorganized:
-                    self.scan_results["unorganized_files"] += 1
-                else:
-                    self.scan_results["organized_files"] += 1
-                    # Learn from organized files
-                    self._learn_from_organized_file(filename, folder_name, dirpath, root_path)
-
-        return self.scan_results
-
-    def _learn_from_organized_file(self, filename: str, folder_name: str, full_path: str, root_path: str):
-        """Learn pattern from file in organized folder"""
-        # Extract pattern signature
-        signature = INTELLIGENT_DETECTOR.learner.extract_signature(filename)
-
-        # Record the mapping: pattern → folder
-        if signature not in self.scan_results["learned_mappings"]:
-            self.scan_results["learned_mappings"][signature] = {
-                "folder": folder_name,
-                "count": 0,
-                "examples": []
-            }
-
-        mapping = self.scan_results["learned_mappings"][signature]
-        mapping["count"] += 1
-
-        if len(mapping["examples"]) < 5:
-            mapping["examples"].append(filename)
-
-        # Track folder structure
-        rel_path = os.path.relpath(full_path, root_path)
-        if folder_name not in self.scan_results["folder_structure"]:
-            self.scan_results["folder_structure"][folder_name] = {
-                "path": rel_path,
-                "file_count": 0,
-                "patterns": set()
-            }
-
-        self.scan_results["folder_structure"][folder_name]["file_count"] += 1
-        self.scan_results["folder_structure"][folder_name]["patterns"].add(signature)
-
-    def apply_learned_patterns_to_ai(self) -> int:
-        """
-        Apply learned patterns to the Intelligent Pattern Detector.
-
-        Returns: Number of patterns applied
-        """
-        patterns_applied = 0
-
-        for signature, data in self.scan_results["learned_mappings"].items():
-            if data["count"] >= 2:  # Only learn patterns with 2+ occurrences
-                folder = data["folder"]
-
-                # Add to AI pattern learner
-                for example in data["examples"]:
-                    INTELLIGENT_DETECTOR.learner.learn(example, folder)
-
-                patterns_applied += 1
-
-        return patterns_applied
-
-    def get_organization_insights(self) -> List[str]:
-        """Get insights about organization patterns"""
-        insights = []
-
-        # Overall organization status
-        if self.scan_results["total_files"] > 0:
-            organized_pct = (self.scan_results["organized_files"] / self.scan_results["total_files"]) * 100
-            insights.append(f"📊 {organized_pct:.1f}% of files are organized ({self.scan_results['organized_files']:,} / {self.scan_results['total_files']:,})")
-
-        # Unorganized areas
-        unorg_count = len(self.scan_results["unorganized_areas"])
-        if unorg_count > 0:
-            total_unorg_files = sum(area["file_count"] for area in self.scan_results["unorganized_areas"])
-            insights.append(f"📁 Found {unorg_count} unorganized folder(s) with {total_unorg_files:,} files waiting to be sorted")
-
-        # Most common folder
-        if self.scan_results["folder_structure"]:
-            most_used = max(self.scan_results["folder_structure"].items(),
-                          key=lambda x: x[1]["file_count"])
-            insights.append(f"🏆 Most used folder: '{most_used[0]}' with {most_used[1]['file_count']:,} files")
-
-        # Pattern diversity
-        pattern_count = len(self.scan_results["learned_mappings"])
-        if pattern_count > 0:
-            insights.append(f"🎯 Detected {pattern_count} unique file naming patterns")
-
-        # Learnable patterns
-        learnable = sum(1 for data in self.scan_results["learned_mappings"].values() if data["count"] >= 2)
-        if learnable > 0:
-            insights.append(f"🧠 {learnable} patterns are ready to be learned by AI Scanner")
-
-        return insights
-
-    def save_scan_results(self):
-        """Save scan results to JSON file"""
-        scan_file = DATA_DIR.get_path("scan_results.json")
-        try:
-            # Convert sets to lists for JSON serialization
-            results_copy = dict(self.scan_results)
-            for folder_data in results_copy.get("folder_structure", {}).values():
-                if "patterns" in folder_data:
-                    folder_data["patterns"] = list(folder_data["patterns"])
-
-            with open(scan_file, 'w') as f:
-                json.dump(results_copy, f, indent=2)
-        except Exception as e:
-            print(f"Failed to save scan results: {e}")
-
-    def load_scan_results(self) -> bool:
-        """Load previous scan results"""
-        scan_file = DATA_DIR.get_path("scan_results.json")
-        if scan_file.exists():
-            try:
-                with open(scan_file, 'r') as f:
-                    self.scan_results = json.load(f)
-
-                # Convert lists back to sets
-                for folder_data in self.scan_results.get("folder_structure", {}).values():
-                    if "patterns" in folder_data and isinstance(folder_data["patterns"], list):
-                        folder_data["patterns"] = set(folder_data["patterns"])
-
-                return True
-            except Exception:
-                return False
-        return False
-
-# Global database scanner
-DATABASE_SCANNER = DatabaseScanner()
-
-# ==============================
 # PRE-FLIGHT VALIDATION
 # ==============================
 def validate_operation(source_dirs: List[str], target_dir: str) -> Tuple[bool, List[str]]:
@@ -1573,15 +861,13 @@ def validate_operation(source_dirs: List[str], target_dir: str) -> Tuple[bool, L
         if not is_safe:
             issues.append(f"🔒 {reason}")
 
-    # Check if target is inside source (skip check if in-place organization mode enabled)
-    # In-place mode allows organizing within the same folder (source == target)
-    if not inplace_organize_var.get():  # Only validate if NOT in in-place mode
-        for src in source_dirs:
-            try:
-                if os.path.commonpath([os.path.abspath(target_dir), os.path.abspath(src)]) == os.path.abspath(src):
-                    issues.append(f"❌ Target cannot be inside source: {src}")
-            except Exception:
-                pass
+    # Check if target is inside source
+    for src in source_dirs:
+        try:
+            if os.path.commonpath([os.path.abspath(target_dir), os.path.abspath(src)]) == os.path.abspath(src):
+                issues.append(f"❌ Target cannot be inside source: {src}")
+        except Exception:
+            pass
 
     # Check available space
     try:
@@ -1602,21 +888,14 @@ def collect_files_generator(source_dirs: List[str], logic_func) -> Iterator[Tupl
     """
     Memory-efficient file collection using generators.
     Yields: (source_path, destination_folder, filename)
-
-    In-place mode: Only organizes files in root directory, skips files already in subfolders.
     """
     target_root = (target_entry.get() or "").strip()
     seen_files = {}  # {filename: {sizes: [], hashes: [], count: N}}
 
     use_hash = CONFIG.get('duplicate_detection.method') == 'hash'
-    inplace_mode = inplace_organize_var.get()
 
     for source in source_dirs:
         for dirpath, dirnames, files in os.walk(source):
-            # In-place mode: Skip files already in subfolders (only organize root files)
-            if inplace_mode and os.path.abspath(dirpath) != os.path.abspath(source):
-                continue
-
             # Filter skip folders
             dirnames[:] = [d for d in dirnames if not should_skip_folder(d)]
 
@@ -1636,22 +915,17 @@ def collect_files_generator(source_dirs: List[str], logic_func) -> Iterator[Tupl
                         is_dup, dup_type = DUPLICATE_DETECTOR.check_duplicate(file, file_size, src)
                         if is_dup:
                             LOGGER.log_duplicate()
-                            # Update folder names to use ! prefix
-                            if dup_type == "DUPES":
-                                dup_type = "!Dupes"
-                            elif dup_type == "DUPE SIZE":
-                                dup_type = "!Dupes Size"
                             yield (src, os.path.join(target_root, dup_type), new_filename)
                             continue
                     else:
                         # Size-only detection
                         if file_size in seen_files[file]['sizes']:
                             LOGGER.log_duplicate()
-                            yield (src, os.path.join(target_root, "!Dupes"), new_filename)
+                            yield (src, os.path.join(target_root, "DUPES"), new_filename)
                             continue
                         else:
                             seen_files[file]['sizes'].append(file_size)
-                            yield (src, os.path.join(target_root, "!Dupes Size"), new_filename)
+                            yield (src, os.path.join(target_root, "DUPE SIZE"), new_filename)
                             continue
                 else:
                     # First occurrence
@@ -1826,74 +1100,39 @@ def monitor_operation_progress():
 # ==============================
 # EXTRACT FUNCTIONS (RESTORED FROM V2)
 # ==============================
-def extract_files(levels: Optional[int] = None):
-    """
-    Unified file extraction function - consolidates extract_all_to_parent() and extract_up_levels().
-
-    Args:
-        levels: None = extract all to parent (all levels)
-                int = extract N levels up (1-10)
-    """
-    # Validate source directories
-    is_valid, source_dirs = validate_sources()
-    if not is_valid:
+def extract_all_to_parent():
+    """Extract all files from subfolders to parent directory"""
+    source_dirs = get_source_dirs()
+    if not source_dirs:
+        messagebox.showerror("Error", "Please select at least one source directory.")
         return
 
-    # Safety validation
+    # Validate source directories are safe
     for src in source_dirs:
         is_safe, reason = is_safe_directory(src)
         if not is_safe:
-            Messages.error(reason, "Unsafe Directory")
+            messagebox.showerror("Unsafe Directory", reason)
             return
 
-    # Determine operation name and title
-    if levels is None:
-        operation_name = "Extract All to Parent"
-        title = "Extract"
-        success_title = "Extract Complete"
-    else:
-        operation_name = f"Extract Up {levels} Levels"
-        title = "Extract Up"
-        success_title = "Extract Up Complete"
-
     # Start operation logging
-    LOGGER.start_operation(operation_name, source_dirs, source_dirs[0])
+    LOGGER.start_operation("Extract All to Parent", source_dirs, source_dirs[0])
 
-    # Build plan
     plan = []
     for source in source_dirs:
         for dirpath, _, files in os.walk(source):
-            # For extract to parent: skip files already in parent
-            if levels is None and os.path.abspath(dirpath) == os.path.abspath(source):
+            if os.path.abspath(dirpath) == os.path.abspath(source):
                 continue
-
-            for fname in files:
-                src = os.path.join(dirpath, fname)
-
-                # Calculate destination
-                if levels is None:
-                    # Extract to parent (source directory)
-                    dest_dir = source
-                else:
-                    # Extract N levels up
-                    dest_dir = dirpath
-                    for _ in range(levels):
-                        dest_dir = os.path.dirname(dest_dir)
-                    # Don't go above source directory
-                    if len(os.path.abspath(dest_dir)) < len(os.path.abspath(source)):
-                        dest_dir = source
-
-                # Only add if file would actually move
-                if os.path.abspath(src) != os.path.join(dest_dir, fname):
-                    plan.append((src, dest_dir, fname))
+            for f in files:
+                src = os.path.join(dirpath, f)
+                dst_folder = source
+                if os.path.abspath(src) != os.path.join(dst_folder, f):
+                    plan.append((src, dst_folder, f))
 
     if not plan:
-        msg = "No files found in subfolders." if levels is None else f"No files found to move for the chosen level(s)."
-        Messages.info(msg, title)
+        messagebox.showinfo("Extract", "No files found in subfolders.")
         LOGGER.end_operation()
         return
 
-    # Execute plan with progress
     progress_bar["maximum"] = len(plan)
     succeeded = 0
     failed = 0
@@ -1906,6 +1145,85 @@ def extract_files(levels: Optional[int] = None):
         update_progress(i, len(plan))
 
     # Clean up empty folders
+    removed = 0
+    for source in source_dirs:
+        for dpath, _, _ in os.walk(source, topdown=False):
+            if os.path.abspath(dpath) != os.path.abspath(source) and not os.listdir(dpath):
+                try:
+                    os.rmdir(dpath)
+                    removed += 1
+                except (OSError, PermissionError):
+                    pass
+
+    LOGGER.end_operation()
+
+    # Show results
+    msg = f"✓ Extract Complete!\n\n"
+    msg += f"Files moved: {succeeded}\n"
+    if failed > 0:
+        msg += f"Files failed: {failed}\n"
+    msg += f"Empty folders removed: {removed}"
+    messagebox.showinfo("Extract Complete", msg)
+
+def extract_up_levels():
+    """Extract files up N levels from their current location"""
+    # Get number of levels
+    try:
+        levels_str = simpledialog.askstring("Extract Up", "How many levels up? (1-10):", initialvalue="1")
+        if not levels_str:
+            return
+        levels = int(levels_str)
+        if levels < 1 or levels > 10:
+            raise ValueError("Levels must be between 1 and 10")
+    except ValueError as e:
+        messagebox.showerror("Invalid Input", str(e))
+        return
+
+    source_dirs = get_source_dirs()
+    if not source_dirs:
+        messagebox.showerror("Error", "Please select at least one source directory.")
+        return
+
+    # Validate source directories are safe
+    for src in source_dirs:
+        is_safe, reason = is_safe_directory(src)
+        if not is_safe:
+            messagebox.showerror("Unsafe Directory", reason)
+            return
+
+    # Start operation logging
+    LOGGER.start_operation(f"Extract Up {levels} Levels", source_dirs, source_dirs[0])
+
+    plan = []
+    for source in source_dirs:
+        for dirpath, _, files in os.walk(source):
+            for fname in files:
+                src = os.path.join(dirpath, fname)
+                dest_dir = dirpath
+                for _ in range(levels):
+                    dest_dir = os.path.dirname(dest_dir)
+                if len(os.path.abspath(dest_dir)) < len(os.path.abspath(source)):
+                    dest_dir = source
+                if os.path.abspath(src) != os.path.join(dest_dir, fname):
+                    plan.append((src, dest_dir, fname))
+
+    if not plan:
+        messagebox.showinfo("Extract Up", "No files found to move for the chosen level(s).")
+        LOGGER.end_operation()
+        return
+
+    progress_bar["maximum"] = len(plan)
+    succeeded = 0
+    failed = 0
+
+    for i, (src, dst_folder, fname) in enumerate(plan, 1):
+        if move_file(src, dst_folder, fname):
+            succeeded += 1
+        else:
+            failed += 1
+        update_progress(i, len(plan))
+
+    # Remove empty folders
     removed_dirs = 0
     for source in source_dirs:
         for dpath, _, _ in os.walk(source, topdown=False):
@@ -1920,251 +1238,13 @@ def extract_files(levels: Optional[int] = None):
 
     LOGGER.end_operation()
 
-    # Show results using OperationResult
-    result = OperationResult(success_title)
-    result.add("Files moved", succeeded)
-    result.add("Files failed", failed, condition=failed > 0)
-    result.add("Empty folders removed", removed_dirs)
-    result.show()
-
-
-def extract_all_to_parent():
-    """Extract all files from subfolders to parent directory (wrapper for extract_files)"""
-    extract_files(levels=None)
-
-def extract_up_levels():
-    """Extract files up N levels from their current location (wrapper for extract_files)"""
-    # Get number of levels from user
-    try:
-        levels_str = simpledialog.askstring("Extract Up", "How many levels up? (1-10):", initialvalue="1")
-        if not levels_str:
-            return
-        levels = int(levels_str)
-        if levels < 1 or levels > 10:
-            raise ValueError("Levels must be between 1 and 10")
-    except ValueError as e:
-        Messages.error(str(e), "Invalid Input")
-        return
-
-    # Call consolidated extract function
-    extract_files(levels=levels)
-
-# ==============================
-# FOLDER CREATION TOOLS (NEW IN V6.3)
-# ==============================
-def create_alphanumeric_folders():
-    """
-    Auto-create A-Z, 0-9, and special character folders.
-
-    User Feature Request #1: One-click folder structure creation
-    """
-    target_dir = (target_entry.get() or "").strip()
-
-    if not target_dir:
-        messagebox.showerror("Error", "Please select a target directory first.")
-        return
-
-    if not os.path.exists(target_dir):
-        messagebox.showerror("Error", f"Target directory does not exist:\n{target_dir}")
-        return
-
-    # Get user preferences from checkboxes
-    include_az = var_create_az.get()
-    include_09 = var_create_09.get()
-    include_special = var_create_special.get()
-    use_uppercase = var_folder_case.get() == "upper"
-
-    if not (include_az or include_09 or include_special):
-        messagebox.showwarning("No Selection", "Please select at least one category to create.")
-        return
-
-    folders = []
-
-    # Add A-Z folders
-    if include_az:
-        if use_uppercase:
-            folders.extend([chr(i) for i in range(ord('A'), ord('Z')+1)])
-        else:
-            folders.extend([chr(i) for i in range(ord('a'), ord('z')+1)])
-
-    # Add 0-9 folders
-    if include_09:
-        folders.extend([str(i) for i in range(10)])
-
-    # Add special character folder
-    if include_special:
-        folders.append("!@#$")
-
-    created = 0
-    existing = 0
-    failed = []
-
-    # Create folders
-    for folder in folders:
-        path = os.path.join(target_dir, folder)
-        try:
-            if os.path.exists(path):
-                existing += 1
-            else:
-                os.makedirs(path)
-                created += 1
-        except Exception as e:
-            failed.append((folder, str(e)))
-
     # Show results
-    msg = "✓ Folder Creation Complete!\n\n"
-    msg += f"Created: {created} folders\n"
-    if existing > 0:
-        msg += f"Already existed: {existing} folders\n"
-    if failed:
-        msg += f"\n❌ Failed: {len(failed)} folders\n"
-        for folder, error in failed[:5]:  # Show first 5 failures
-            msg += f"  • {folder}: {error}\n"
-        if len(failed) > 5:
-            msg += f"  ... and {len(failed)-5} more\n"
-
-    messagebox.showinfo("Folder Creation Complete", msg)
-
-
-def search_and_collect():
-    """
-    Search for files matching a custom pattern and collect them into a folder.
-    User Feature Request #2: Custom pattern search with user-specified pattern
-    """
-    source_dirs = get_source_dirs()
-    if not source_dirs:
-        messagebox.showerror("Error", "Please select at least one source directory.")
-        return
-
-    pattern = var_search_pattern.get().strip()
-    if not pattern:
-        messagebox.showwarning("No Pattern", "Please enter a search pattern (e.g., IMG*, *-001-*, *.jpg)")
-        return
-
-    folder_name = var_search_folder.get().strip()
-    if not folder_name:
-        messagebox.showwarning("No Folder Name", "Please specify a folder name for collected files.")
-        return
-
-    # Sanitize folder name
-    folder_name = sanitize_folder_name(folder_name)
-
-    # Get target directory
-    target_dir = (target_entry.get() or "").strip()
-    if not target_dir:
-        messagebox.showerror("Error", "Please select a target directory.")
-        return
-
-    if not os.path.exists(target_dir):
-        messagebox.showerror("Error", f"Target directory does not exist:\n{target_dir}")
-        return
-
-    # Search for matching files
-    status_label.config(text="🔍 Searching for matching files...")
-    root.update()
-
-    matching_files = []
-    total_scanned = 0
-
-    try:
-        import fnmatch
-
-        for source_dir in source_dirs:
-            for dirpath, dirnames, filenames in os.walk(source_dir):
-                # Skip certain folders
-                dirnames[:] = [d for d in dirnames if not should_skip_folder(d)]
-
-                for filename in filenames:
-                    total_scanned += 1
-
-                    # Update progress every 1000 files
-                    if total_scanned % 1000 == 0:
-                        status_label.config(text=f"🔍 Scanned {total_scanned} files, found {len(matching_files)} matches...")
-                        root.update()
-
-                    # Check if filename matches pattern
-                    if fnmatch.fnmatch(filename, pattern):
-                        src_path = os.path.join(dirpath, filename)
-                        matching_files.append((src_path, filename))
-
-        status_label.config(text=f"✓ Search complete: {len(matching_files)} matches found")
-
-    except Exception as e:
-        status_label.config(text="❌ Search failed")
-        messagebox.showerror("Search Error", f"Error during search:\n{str(e)}")
-        return
-
-    # Show preview
-    if not matching_files:
-        messagebox.showinfo("No Matches", f"No files found matching pattern: {pattern}\n\nTotal scanned: {total_scanned}")
-        return
-
-    # Preview dialog
-    preview_msg = f"✓ Found {len(matching_files)} files matching '{pattern}'\n\n"
-    preview_msg += f"They will be moved to: {target_dir}\\{folder_name}\\\n\n"
-    preview_msg += "Sample files (showing first 10):\n"
-    for src_path, filename in matching_files[:10]:
-        preview_msg += f"  • {filename}\n"
-    if len(matching_files) > 10:
-        preview_msg += f"  ... and {len(matching_files)-10} more\n"
-    preview_msg += f"\n\nTotal scanned: {total_scanned} files"
-    preview_msg += f"\nProceed with moving {len(matching_files)} files?"
-
-    if not messagebox.askyesno("Confirm Pattern Collection", preview_msg):
-        status_label.config(text="Pattern collection cancelled")
-        return
-
-    # Create target folder
-    dest_folder = os.path.join(target_dir, folder_name)
-    try:
-        os.makedirs(dest_folder, exist_ok=True)
-    except Exception as e:
-        messagebox.showerror("Error", f"Could not create folder:\n{str(e)}")
-        return
-
-    # Move files
-    status_label.config(text=f"📦 Moving {len(matching_files)} files...")
-    root.update()
-
-    moved = 0
-    failed = []
-
-    for i, (src_path, filename) in enumerate(matching_files, 1):
-        # Update progress every 100 files
-        if i % 100 == 0:
-            status_label.config(text=f"📦 Moving files... {i}/{len(matching_files)}")
-            root.update()
-
-        dest_path = os.path.join(dest_folder, filename)
-
-        # Handle filename collisions
-        if os.path.exists(dest_path):
-            base, ext = os.path.splitext(filename)
-            counter = 2
-            while os.path.exists(os.path.join(dest_folder, f"{base}({counter}){ext}")):
-                counter += 1
-            dest_path = os.path.join(dest_folder, f"{base}({counter}){ext}")
-
-        try:
-            shutil.move(src_path, dest_path)
-            moved += 1
-        except Exception as e:
-            failed.append((filename, str(e)))
-
-    # Show results
-    result_msg = f"✓ Pattern Collection Complete!\n\n"
-    result_msg += f"Pattern: {pattern}\n"
-    result_msg += f"Folder: {folder_name}\n"
-    result_msg += f"Moved: {moved} files\n"
-    if failed:
-        result_msg += f"\n❌ Failed: {len(failed)} files\n"
-        for filename, error in failed[:5]:
-            result_msg += f"  • {filename}: {error}\n"
-        if len(failed) > 5:
-            result_msg += f"  ... and {len(failed)-5} more\n"
-
-    status_label.config(text=f"✓ Moved {moved} files to {folder_name}/")
-    messagebox.showinfo("Pattern Collection Complete", result_msg)
+    msg = f"✓ Extract Up Complete!\n\n"
+    msg += f"Files moved: {succeeded}\n"
+    if failed > 0:
+        msg += f"Files failed: {failed}\n"
+    msg += f"Empty folders removed: {removed_dirs}"
+    messagebox.showinfo("Extract Up Complete", msg)
 
 # ==============================
 # LOGIC FUNCTIONS (from v4)
@@ -2220,18 +1300,6 @@ def by_detected_or_prompt(filename: str, allow_prompt: bool = True) -> Optional[
 def by_sequential(filename: str) -> Optional[str]:
     """Sequential pattern detection for organization mode"""
     return detect_sequential_pattern(filename)
-
-def by_intelligent(filename: str) -> Optional[str]:
-    """
-    Intelligent pattern detection with learning - consolidates Smart Pattern, Smart Pattern+, and Sequential Pattern.
-
-    Uses IntelligentPatternDetector which:
-    - Checks learned patterns first (highest confidence)
-    - Falls back to camera tags, sequential patterns, smart patterns
-    - Returns folder name or None
-    """
-    folder, confidence, method = INTELLIGENT_DETECTOR.detect(filename)
-    return folder
 
 # ==============================
 # AUTOMATIC PATTERN SCANNER
@@ -2558,463 +1626,6 @@ def show_pattern_scanner():
     ttk.Button(button_frame, text="Close", command=scanner_win.destroy).pack(side="right")
 
 # ==============================
-# LEARNED PATTERNS VIEWER
-# ==============================
-def show_learned_patterns():
-    """Display learned patterns from the intelligent pattern detector"""
-    patterns_win = tk.Toplevel(root)
-    patterns_win.title("🧠 Learned Patterns - Intelligent Pattern Scanner")
-    patterns_win.geometry("900x600")
-
-    main_frame = ttk.Frame(patterns_win, padding=10)
-    main_frame.pack(fill=tk.BOTH, expand=True)
-
-    ttk.Label(main_frame, text="🧠 Learned Patterns", font=FONT_TITLE).pack(anchor="w", pady=(0, 10))
-
-    info_text = ("The intelligent pattern scanner learns from your file organization patterns.\n"
-                 "Each time you organize files, it remembers the pattern and improves its predictions.\n\n"
-                 "Confidence increases with each successful use of the same pattern.")
-    ttk.Label(main_frame, text=info_text, wraplength=850, justify="left").pack(anchor="w", pady=(0, 10))
-
-    # Treeview for patterns
-    columns = ("Signature", "Folder", "Count", "Confidence", "Examples")
-    tree = ttk.Treeview(main_frame, columns=columns, show="headings", height=20)
-
-    tree.heading("Signature", text="Pattern Signature")
-    tree.heading("Folder", text="Target Folder")
-    tree.heading("Count", text="Uses")
-    tree.heading("Confidence", text="Confidence")
-    tree.heading("Examples", text="Example Files")
-
-    tree.column("Signature", width=150)
-    tree.column("Folder", width=150)
-    tree.column("Count", width=80)
-    tree.column("Confidence", width=100)
-    tree.column("Examples", width=400)
-
-    tree.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-
-    # Scrollbar
-    scrollbar = ttk.Scrollbar(tree, orient="vertical", command=tree.yview)
-    tree.configure(yscrollcommand=scrollbar.set)
-    scrollbar.pack(side="right", fill="y")
-
-    # Load and display learned patterns
-    patterns = INTELLIGENT_DETECTOR.learner.patterns
-
-    if not patterns:
-        tree.insert("", "end", values=("No patterns learned yet", "", "", "", "Start using Intelligent Pattern to learn!"))
-    else:
-        for signature, data in sorted(patterns.items(), key=lambda x: x[1].get("count", 0), reverse=True):
-            folder = data.get("folder", "")
-            count = data.get("count", 0)
-            confidence = min(0.99, 0.80 + (count * 0.03))
-            examples = data.get("examples", [])
-            examples_str = ", ".join(examples[:3])  # Show first 3 examples
-
-            tree.insert("", "end", values=(
-                signature,
-                folder,
-                count,
-                f"{confidence:.0%}",
-                examples_str
-            ))
-
-    # Buttons
-    button_frame = ttk.Frame(main_frame)
-    button_frame.pack(fill="x", pady=(10, 0))
-
-    def clear_patterns():
-        """Clear all learned patterns"""
-        if Messages.confirm("Are you sure you want to clear all learned patterns?\n\nThis cannot be undone.", "Clear Patterns"):
-            INTELLIGENT_DETECTOR.learner.patterns = {}
-            INTELLIGENT_DETECTOR.learner._save_patterns()
-            patterns_win.destroy()
-            Messages.info("All learned patterns have been cleared.", "Patterns Cleared")
-
-    ttk.Button(button_frame, text="🗑️ Clear All Patterns", command=clear_patterns).pack(side="left", padx=(0, 10))
-    ttk.Label(button_frame, text=f"Total Patterns: {len(patterns)}", font=FONT_BASE).pack(side="left", padx=10)
-    ttk.Button(button_frame, text="Close", command=patterns_win.destroy).pack(side="right")
-
-
-def show_pattern_statistics():
-    """Display statistics about the intelligent pattern scanner"""
-    stats_win = tk.Toplevel(root)
-    stats_win.title("🔬 Pattern Scanner Statistics")
-    stats_win.geometry("700x500")
-
-    main_frame = ttk.Frame(stats_win, padding=10)
-    main_frame.pack(fill=tk.BOTH, expand=True)
-
-    ttk.Label(main_frame, text="🔬 Pattern Scanner Statistics", font=FONT_TITLE).pack(anchor="w", pady=(0, 10))
-
-    # Get statistics
-    patterns = INTELLIGENT_DETECTOR.learner.patterns
-    total_patterns = len(patterns)
-    total_uses = sum(p.get("count", 0) for p in patterns.values())
-
-    # Count patterns by confidence level
-    high_confidence = sum(1 for p in patterns.values() if p.get("count", 0) >= 5)
-    medium_confidence = sum(1 for p in patterns.values() if 2 <= p.get("count", 0) < 5)
-    low_confidence = sum(1 for p in patterns.values() if p.get("count", 0) < 2)
-
-    # Most used pattern
-    most_used = None
-    if patterns:
-        most_used = max(patterns.items(), key=lambda x: x[1].get("count", 0))
-
-    # Create statistics display
-    stats_text = tk.Text(main_frame, wrap=tk.WORD, height=20, width=80, font=FONT_BASE)
-    stats_text.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-
-    # Build statistics content
-    content = f"""
-📊 OVERVIEW
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Total Learned Patterns: {total_patterns}
-Total Pattern Uses: {total_uses}
-Average Uses per Pattern: {total_uses / total_patterns if total_patterns > 0 else 0:.1f}
-
-
-🎯 CONFIDENCE DISTRIBUTION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-High Confidence (5+ uses, 95-99%): {high_confidence} patterns
-Medium Confidence (2-4 uses, 86-92%): {medium_confidence} patterns
-Low Confidence (1 use, 80-83%): {low_confidence} patterns
-
-
-🏆 TOP PATTERN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-"""
-
-    if most_used:
-        signature, data = most_used
-        count = data.get("count", 0)
-        folder = data.get("folder", "")
-        confidence = min(0.99, 0.80 + (count * 0.03))
-        examples = data.get("examples", [])
-
-        content += f"""
-Pattern Signature: {signature}
-Target Folder: {folder}
-Times Used: {count}
-Confidence: {confidence:.0%}
-Examples: {", ".join(examples[:3])}
-
-
-"""
-
-    content += f"""
-💡 DETECTION METHODS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-The Intelligent Scanner uses a 4-tier detection system:
-
-1. 🧠 Learned Patterns (80-99% confidence)
-   • Patterns you've used before
-   • Confidence increases with each use
-   • Currently: {total_patterns} learned pattern{"s" if total_patterns != 1 else ""}
-
-2. 📷 Camera Tags (95% confidence)
-   • IMG, DSC, DSCN, DCS tags
-   • Professional camera file detection
-
-3. 🔢 Sequential Patterns (90% confidence)
-   • file001, vacation-123, 031204-0022
-   • Number-based sequences
-
-4. 🎯 Smart Delimiter Patterns (80% confidence)
-   • Underscore and hyphen detection
-   • Context-aware capitalization
-
-
-📈 LEARNING PROCESS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Each time you organize files:
-1. Pattern signature extracted (e.g., "TEXT-NNN")
-2. Your folder choice is remembered
-3. Confidence increases with repeated use
-4. Pattern saved to learned_patterns.json
-
-The more you use it, the smarter it gets! 🚀
-
-
-💾 DATA STORAGE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Learned patterns are stored in:
-{DATA_DIR.get_path("learned_patterns.json")}
-
-All data is stored locally on your computer.
-No cloud sync, no tracking, complete privacy.
-"""
-
-    stats_text.insert("1.0", content)
-    stats_text.config(state="disabled")
-
-    # Buttons
-    button_frame = ttk.Frame(main_frame)
-    button_frame.pack(fill="x", pady=(10, 0))
-
-    ttk.Button(button_frame, text="📚 View Patterns", command=lambda: [stats_win.destroy(), show_learned_patterns()]).pack(side="left", padx=(0, 10))
-    ttk.Button(button_frame, text="Close", command=stats_win.destroy).pack(side="right")
-
-
-# ==============================
-# DATABASE SCANNER UI
-# ==============================
-def show_database_scanner():
-    """Show database scanner window for learning from existing organization"""
-    scanner_win = tk.Toplevel(root)
-    scanner_win.title("📊 Database Scanner - Learn from Your Organization")
-    scanner_win.geometry("1000x700")
-
-    main_frame = ttk.Frame(scanner_win, padding=10)
-    main_frame.pack(fill=tk.BOTH, expand=True)
-
-    ttk.Label(main_frame, text="📊 Database Scanner", font=FONT_TITLE).pack(anchor="w", pady=(0, 10))
-
-    info_text = ("Scan your directories to learn organization patterns.\n"
-                 "The AI will analyze your existing folder structure and learn from it.\n"
-                 "Files in 'Sorting', 'Sort', or 'Unsorted' folders are treated as unorganized (not touched).")
-    ttk.Label(main_frame, text=info_text, wraplength=950, justify="left").pack(anchor="w", pady=(0, 10))
-
-    # Directory selection
-    dir_frame = ttk.LabelFrame(main_frame, text="Scan Directory", padding=10)
-    dir_frame.pack(fill="x", pady=(0, 10))
-
-    scan_dir_var = tk.StringVar()
-    ttk.Entry(dir_frame, textvariable=scan_dir_var, width=80).pack(side="left", padx=(0, 10))
-
-    def browse_scan_dir():
-        path = filedialog.askdirectory()
-        if path:
-            scan_dir_var.set(path)
-
-    ttk.Button(dir_frame, text="Browse", command=browse_scan_dir).pack(side="left")
-
-    # Progress frame
-    progress_frame = ttk.Frame(main_frame)
-    progress_frame.pack(fill="x", pady=(0, 10))
-
-    scan_progress = ttk.Progressbar(progress_frame, mode='indeterminate')
-    scan_progress.pack(fill="x", pady=5)
-
-    status_label = ttk.Label(progress_frame, text="Ready to scan")
-    status_label.pack(anchor="w")
-
-    # Results display
-    results_frame = ttk.LabelFrame(main_frame, text="Scan Results", padding=10)
-    results_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-
-    results_text = tk.Text(results_frame, wrap=tk.WORD, height=25, font=FONT_BASE)
-    results_text.pack(fill=tk.BOTH, expand=True, side="left")
-
-    scrollbar = ttk.Scrollbar(results_frame, orient="vertical", command=results_text.yview)
-    results_text.configure(yscrollcommand=scrollbar.set)
-    scrollbar.pack(side="right", fill="y")
-
-    def update_progress(count, filename):
-        """Update progress display"""
-        status_label.config(text=f"Scanning... {count:,} files processed (current: {filename})")
-        scanner_win.update_idletasks()
-
-    def perform_scan():
-        """Perform the directory scan"""
-        scan_path = scan_dir_var.get().strip()
-
-        if not scan_path:
-            Messages.error("Please select a directory to scan", "No Directory")
-            return
-
-        if not os.path.isdir(scan_path):
-            Messages.error(f"Directory does not exist:\n{scan_path}", "Invalid Directory")
-            return
-
-        # Clear previous results
-        results_text.config(state="normal")
-        results_text.delete("1.0", tk.END)
-        results_text.config(state="disabled")
-
-        # Start progress
-        scan_progress.start()
-        status_label.config(text="Starting scan...")
-        scanner_win.update_idletasks()
-
-        try:
-            # Perform scan
-            scan_results = DATABASE_SCANNER.scan_directory(scan_path, update_progress)
-
-            # Save results
-            DATABASE_SCANNER.save_scan_results()
-
-            # Display results
-            display_scan_results(scan_results)
-
-            status_label.config(text=f"Scan complete! {scan_results['total_files']:,} files analyzed")
-
-        except Exception as e:
-            Messages.error(f"Scan failed:\n{str(e)}", "Scan Error")
-            status_label.config(text="Scan failed")
-
-        finally:
-            scan_progress.stop()
-
-    def display_scan_results(results):
-        """Display scan results in text widget"""
-        results_text.config(state="normal")
-        results_text.delete("1.0", tk.END)
-
-        # Build results display
-        output = f"""
-{'='*80}
-📊 SCAN RESULTS
-{'='*80}
-
-📁 OVERVIEW
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Scanned Directory: {results['root_path']}
-Scan Date: {results['scan_date']}
-
-Total Files: {results['total_files']:,}
-Total Folders: {results['total_folders']:,}
-
-Organized Files: {results['organized_files']:,} ({results['organized_files']/results['total_files']*100:.1f}% if results['total_files'] > 0 else 0)
-Unorganized Files: {results['unorganized_files']:,} ({results['unorganized_files']/results['total_files']*100:.1f}% if results['total_files'] > 0 else 0)
-
-
-📂 UNORGANIZED AREAS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-"""
-
-        if results['unorganized_areas']:
-            output += f"Found {len(results['unorganized_areas'])} unorganized folder(s):\n\n"
-            for area in results['unorganized_areas']:
-                output += f"  📁 {area['folder']}\n"
-                output += f"     Path: {area['path']}\n"
-                output += f"     Files: {area['file_count']:,}\n\n"
-        else:
-            output += "No unorganized areas found (all files are in organized folders).\n\n"
-
-        output += f"""
-
-🎯 LEARNED PATTERNS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Unique Patterns Detected: {len(results['learned_mappings'])}
-
-"""
-
-        # Show top patterns
-        if results['learned_mappings']:
-            sorted_patterns = sorted(results['learned_mappings'].items(),
-                                   key=lambda x: x[1]['count'], reverse=True)
-
-            output += "Top Patterns (by frequency):\n\n"
-            for i, (signature, data) in enumerate(sorted_patterns[:10], 1):
-                output += f"{i}. Pattern: {signature}\n"
-                output += f"   Folder: {data['folder']}\n"
-                output += f"   Count: {data['count']} files\n"
-                output += f"   Examples: {', '.join(data['examples'][:3])}\n\n"
-
-        output += f"""
-
-🗂️ FOLDER STRUCTURE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Total Organized Folders: {len(results['folder_structure'])}
-
-"""
-
-        # Show folder structure
-        if results['folder_structure']:
-            sorted_folders = sorted(results['folder_structure'].items(),
-                                  key=lambda x: x[1]['file_count'], reverse=True)
-
-            output += "Folders (sorted by file count):\n\n"
-            for folder_name, folder_data in sorted_folders[:20]:
-                output += f"📁 {folder_name}\n"
-                output += f"   Files: {folder_data['file_count']:,}\n"
-                output += f"   Patterns: {len(folder_data['patterns'])}\n\n"
-
-        # Insights
-        output += f"""
-
-💡 INSIGHTS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-"""
-
-        insights = DATABASE_SCANNER.get_organization_insights()
-        for insight in insights:
-            output += f"{insight}\n"
-
-        output += f"""
-
-
-🧠 READY TO LEARN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-{len([d for d in results['learned_mappings'].values() if d['count'] >= 2])} patterns are ready to be applied to the AI Scanner.
-
-Click "Apply to AI Scanner" to teach the AI your organization preferences!
-
-{'='*80}
-"""
-
-        results_text.insert("1.0", output)
-        results_text.config(state="disabled")
-
-    def apply_to_ai():
-        """Apply learned patterns to AI Scanner"""
-        if DATABASE_SCANNER.scan_results.get("total_files", 0) == 0:
-            Messages.error("No scan results available.\n\nPlease run a scan first.", "No Results")
-            return
-
-        try:
-            patterns_applied = DATABASE_SCANNER.apply_learned_patterns_to_ai()
-
-            if patterns_applied > 0:
-                Messages.info(
-                    f"Successfully applied {patterns_applied} pattern(s) to the AI Scanner!\n\n"
-                    f"The AI will now use these patterns when organizing files.\n\n"
-                    f"You can view learned patterns in: 🧠 AI Scanner → 📚 View Learned Patterns",
-                    "Patterns Applied"
-                )
-            else:
-                Messages.warning(
-                    "No patterns were applied.\n\n"
-                    "Patterns need at least 2 occurrences to be learned.\n"
-                    "Try scanning a folder with more organized files.",
-                    "No Patterns Applied"
-                )
-
-        except Exception as e:
-            Messages.error(f"Failed to apply patterns:\n{str(e)}", "Error")
-
-    def load_previous_scan():
-        """Load and display previous scan results"""
-        if DATABASE_SCANNER.load_scan_results():
-            display_scan_results(DATABASE_SCANNER.scan_results)
-            status_label.config(text="Loaded previous scan results")
-        else:
-            Messages.info("No previous scan results found.\n\nRun a scan to get started!", "No Previous Scan")
-
-    # Buttons
-    button_frame = ttk.Frame(main_frame)
-    button_frame.pack(fill="x", pady=(10, 0))
-
-    ttk.Button(button_frame, text="🔍 Start Scan", command=perform_scan, width=15).pack(side="left", padx=(0, 10))
-    ttk.Button(button_frame, text="🧠 Apply to AI Scanner", command=apply_to_ai, width=20).pack(side="left", padx=(0, 10))
-    ttk.Button(button_frame, text="📂 Load Previous Scan", command=load_previous_scan, width=20).pack(side="left", padx=(0, 10))
-    ttk.Button(button_frame, text="Close", command=scanner_win.destroy).pack(side="right")
-
-# ==============================
 # UNDO FUNCTIONALITY
 # ==============================
 def show_undo_window():
@@ -3209,42 +1820,13 @@ def show_help():
 FILE ORGANIZER — {VERSION}
 ═══════════════════════════════════════════════════
 
-✨ NEW IN VERSION 6.3 (GUI ENHANCEMENTS):
-• Auto-Create A-Z + 0-9 Folders - One-click folder structure creation
-  - Create alphabetic folders (A-Z or a-z)
-  - Create numeric folders (0-9)
-  - Create special character folder (!@#$)
-  - Choose uppercase or lowercase
-  - Perfect for pre-organizing before file operations
-
-• Custom Pattern Search & Collect - Search and gather files by pattern
-  - Enter custom patterns: IMG*, *-001-*, *.jpg, etc.
-  - Scans all source directories
-  - Shows preview of matches before moving
-  - Collects all matching files into one folder
-  - Real-time progress updates
-
-• Tabbed Interface - Organized UI with logical grouping
-  - 📂 Organize tab: All organization modes
-  - 🔧 Tools tab: Folder tools, pattern search, extract
-  - ⚙️ Advanced tab: Pattern scanner, statistics, history
-  - Cleaner, more intuitive navigation
-
-• Recent Directories Dropdown - Quick access to previous paths
-  - Source and target directories remember last 10 used
-  - Dropdown shows history for quick selection
-  - Persists across sessions
-  - Auto-updated when browsing or running operations
-
-🆕 VERSION 6.2 (IN-PLACE ORGANIZATION):
-• In-Place Organization Mode - organize files within the same folder
-• Skip folders with # prefix (e.g., #Sort, #Archive)
-• Checkbox control to enable/disable in-place mode
-• All v6.1 features preserved:
-  - Case-insensitive Windows path security check
-  - Windows reserved folder name sanitization (Critical #36 fix)
-  - Progress UI for UNDO
-  - Comprehensive type hints
+🆕 NEW IN VERSION 6.1 (ENHANCED ARCHITECTURE):
+• Progress UI for UNDO
+• Comprehensive type hints
+• Cleaner separation of concerns
+• Same safety posture preserved (path traversal, TOCTOU)
+• Case-insensitive Windows path security check
+• Windows reserved folder name sanitization (Critical #36 fix)
 
 🔥 SEQUENTIAL PATTERN DETECTION
 • Detects sequential file naming patterns
@@ -3305,23 +1887,9 @@ FILE ORGANIZER — {VERSION}
 ✅ PRE-FLIGHT VALIDATION
 • Checks source/target validity
 • Verifies write permissions
-• Prevents target-in-source errors (unless in-place mode enabled)
+• Prevents target-in-source errors
 • Warns about low disk space
 • Validates before any file moves
-
-🎯 IN-PLACE ORGANIZATION MODE (NEW IN v6.2)
-• Enable checkbox: "✓ Organize within same folder (source = target)"
-• Allows organizing files within the same directory
-• Perfect for multi-level organization:
-  - First pass: Move files into top-level folders (A/, B/, C/)
-  - Second pass: Organize within each folder (Alpha/, Amb/ subfolders)
-  - Third pass: Further organize subfolders (001/, 002/ sub-subfolders)
-• Example workflow:
-  1. Organize 5000 files → A/ folder (Alpha-001.jpg, Amb-001.jpg, etc.)
-  2. Enable in-place mode, set source=target=A/
-  3. Organize again → creates Alpha/, Amb/ subfolders within A/
-  4. Navigate to Amb/, organize again → creates 001/, 002/ sub-subfolders
-• Folders starting with # are skipped (e.g., #Sort, #Archive)
 
 📊 STATISTICS & ANALYTICS
 • Track all operations
@@ -3359,15 +1927,11 @@ FILE ORGANIZER — {VERSION}
 🔍 ORGANIZATION MODES:
 • By Extension - Group by file type
 • Alphabetize - Group by first character
+• Smart Pattern - Detect naming patterns
+• Smart Pattern + - Prompt for unknown patterns
+• Sequential Pattern - Detect sequential files (file001→File, vacation-001→Vacation, 031204-0022→031204)
 • IMG/DSC Only - Camera file detection
-
-🧠 AI SCANNER TAB (NEW!):
-• Intelligent Pattern Detection with Machine Learning
-• Learns from your organization choices
-• Auto-detects: Camera tags, Sequential files, Delimiter patterns
-• Confidence scoring: 80-99%
-• View learned patterns and statistics
-• The more you use it, the smarter it gets!
+• Pattern Scanner - Auto-detect 7 pattern types including SEQUENCE
 
 📝 TIPS:
 • Always preview before organizing
@@ -3377,7 +1941,7 @@ FILE ORGANIZER — {VERSION}
 • Enable hash detection for accuracy
 
 ═══════════════════════════════════════════════════
-Version 6.2 — In-Place Organization
+Version 6.1 — Enhanced Architecture
 """
     text_area.insert(tk.END, help_text)
     text_area.config(state=tk.DISABLED)
@@ -3408,151 +1972,69 @@ sections = {
         ("IMG/DSC Only", lambda: run_organizer(by_img_dsc, operation_name="IMG/DSC")),
         ("Preview", lambda: run_organizer(by_img_dsc, preview=True)),
     ],
-    "🧠 Intelligent Scanner": [
-        ("🧠 Organize with AI Learning", lambda: run_organizer(by_intelligent, operation_name="Intelligent Pattern")),
-        ("👁️ Preview Patterns", lambda: run_organizer(by_intelligent, preview=True)),
-        ("📚 View Learned Patterns", lambda: show_learned_patterns()),
-        ("🔬 Pattern Statistics", lambda: show_pattern_statistics()),
+    "Smart Pattern": [
+        ("Smart Pattern", lambda: run_organizer(by_detected, operation_name="Smart Pattern")),
+        ("Preview", lambda: run_organizer(by_detected, preview=True)),
+    ],
+    "Smart Pattern +": [
+        ("Smart Pattern +", lambda: run_organizer(lambda f: by_detected_or_prompt(f, True), operation_name="Smart Pattern+")),
+        ("Preview", lambda: run_organizer(lambda f: by_detected_or_prompt(f, False), preview=True)),
+    ],
+    "Sequential Pattern": [
+        ("Sequential Pattern", lambda: run_organizer(by_sequential, operation_name="Sequential Pattern")),
+        ("Preview Sequential", lambda: run_organizer(by_sequential, preview=True)),
     ],
     "📤 Extract": [
         ("Extract All to Parent", extract_all_to_parent),
         ("Extract Up N Levels", extract_up_levels),
-    ],
-    "📁 Folder Tools": [
-        ("Create A-Z + 0-9 Folders", create_alphanumeric_folders),
-    ],
-    "🔍 Pattern Search": [
-        ("Search & Collect by Pattern", search_and_collect),
     ],
     "🔧 Tools": [
         ("🔍 Pattern Scanner", show_pattern_scanner),
         ("📊 Statistics", show_statistics),
         ("🔄 View History & Undo", show_undo_window),
     ],
-    "📊 Database Scanner": [
-        ("📊 Scan & Learn", show_database_scanner),
-    ],
 }
 
-# ── TABBED ACTIONS (v6.3) ──────────────────────────────────────────────────────
-# Group sections into tabs for better organization
-tab_groups = {
-    "📂 Organize": ["By Extension", "Alphabetize", "IMG/DSC"],
-    "🧠 AI Scanner": ["🧠 Intelligent Scanner"],
-    "📊 DB Scanner": ["📊 Database Scanner"],
-    "🔧 Tools": ["📤 Extract", "📁 Folder Tools", "🔍 Pattern Search"],
-    "⚙️ Advanced": ["🔧 Tools"],
-}
+# ── ACTIONS (scrollable) ───────────────────────────────────────────────────────
+actions_frame = ttk.LabelFrame(root, text="Actions", style="Section.TLabelframe")
+actions_frame.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=(0, 8))
+actions_frame.columnconfigure(0, weight=1)
+actions_frame.rowconfigure(0, weight=1)
 
-def create_scrollable_tab(parent):
-    """Create a scrollable frame for a tab"""
-    canvas = tk.Canvas(parent, highlightthickness=0)
-    vsb = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
-    canvas.configure(yscrollcommand=vsb.set, height=200)
-    canvas.grid(row=0, column=0, sticky="nsew")
-    vsb.grid(row=0, column=1, sticky="ns")
+actions_canvas = tk.Canvas(actions_frame, highlightthickness=0)
+actions_vsb = ttk.Scrollbar(actions_frame, orient="vertical", command=actions_canvas.yview)
+actions_canvas.configure(yscrollcommand=actions_vsb.set, height=200)
+actions_canvas.grid(row=0, column=0, sticky="nsew")
+actions_vsb.grid(row=0, column=1, sticky="ns")
 
-    content = ttk.Frame(canvas)
-    canvas_window = canvas.create_window((0, 0), window=content, anchor="nw")
+actions_content = ttk.Frame(actions_canvas)
+_actions_window = actions_canvas.create_window((0, 0), window=actions_content, anchor="nw")
 
-    def on_configure(event):
-        canvas.configure(scrollregion=canvas.bbox("all"))
+def _actions_on_configure(event):
+    actions_canvas.configure(scrollregion=actions_canvas.bbox("all"))
 
-    def on_canvas_configure(event):
-        canvas.itemconfig(canvas_window, width=event.width)
+def _canvas_on_configure(event):
+    actions_canvas.itemconfig(_actions_window, width=event.width)
 
-    content.bind("<Configure>", on_configure)
-    canvas.bind("<Configure>", on_canvas_configure)
+actions_content.bind("<Configure>", _actions_on_configure)
+actions_canvas.bind("<Configure>", _canvas_on_configure)
 
-    # Mouse wheel scrolling
-    def on_mousewheel(event):
-        if hasattr(event, "delta") and event.delta:
-            canvas.yview_scroll(-1 if event.delta > 0 else 1, "units")
-        elif hasattr(event, "num"):
-            if event.num == 4:
-                canvas.yview_scroll(-1, "units")
-            elif event.num == 5:
-                canvas.yview_scroll(1, "units")
+# Mouse wheel scrolling
+def _on_mousewheel(event):
+    if hasattr(event, "delta") and event.delta:
+        actions_canvas.yview_scroll(-1 if event.delta > 0 else 1, "units")
+    elif hasattr(event, "num"):
+        if event.num == 4:
+            actions_canvas.yview_scroll(-1, "units")
+        elif event.num == 5:
+            actions_canvas.yview_scroll(1, "units")
 
-    canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", on_mousewheel))
-    canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
+actions_canvas.bind("<Enter>", lambda e: actions_canvas.bind_all("<MouseWheel>", _on_mousewheel))
+actions_canvas.bind("<Leave>", lambda e: actions_canvas.unbind_all("<MouseWheel>"))
 
-    return content
-
-# Create notebook for tabs
-notebook = ttk.Notebook(root)
-notebook.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=(0, 8))
-
-# Create tabs
-tabs = {}
-for tab_name, section_list in tab_groups.items():
-    tab_frame = ttk.Frame(notebook)
-    tab_frame.columnconfigure(0, weight=1)
-    tab_frame.rowconfigure(0, weight=1)
-    notebook.add(tab_frame, text=tab_name)
-    tabs[tab_name] = create_scrollable_tab(tab_frame)
-
-# Render sections into tabs
+# Render sections
 for title in sorted(sections.keys()):
-    # Find which tab this section belongs to
-    target_tab = None
-    for tab_name, section_list in tab_groups.items():
-        if title in section_list:
-            target_tab = tabs[tab_name]
-            break
-
-    if not target_tab:
-        continue  # Skip sections not in any tab
-
-    if title == "📁 Folder Tools":
-        # Add special section with checkboxes for folder creation
-        sect = ttk.LabelFrame(target_tab, text=title, style="Section.TLabelframe")
-        sect.pack(fill="x", padx=0, pady=(0, 6))
-
-        # Button row
-        button_row = ttk.Frame(sect)
-        button_row.pack(fill="x", padx=6, pady=(6,3))
-        ttk.Button(button_row, text="Create A-Z + 0-9 Folders", command=create_alphanumeric_folders).pack(side="left", padx=(0, 6))
-
-        # Options row
-        options_row = ttk.Frame(sect)
-        options_row.pack(fill="x", padx=6, pady=(0,6))
-        ttk.Checkbutton(options_row, text="A-Z", variable=var_create_az).pack(side="left", padx=(0,6))
-        ttk.Checkbutton(options_row, text="0-9", variable=var_create_09).pack(side="left", padx=(0,6))
-        ttk.Checkbutton(options_row, text="!@#$", variable=var_create_special).pack(side="left", padx=(0,6))
-        ttk.Radiobutton(options_row, text="UPPER", variable=var_folder_case, value="upper").pack(side="left", padx=(12,6))
-        ttk.Radiobutton(options_row, text="lower", variable=var_folder_case, value="lower").pack(side="left")
-
-        ttk.Separator(target_tab, orient="horizontal").pack(fill="x", padx=0, pady=(0, 6))
-
-    elif title == "🔍 Pattern Search":
-        # Add special section with input fields for pattern search
-        sect = ttk.LabelFrame(target_tab, text=title, style="Section.TLabelframe")
-        sect.pack(fill="x", padx=0, pady=(0, 6))
-
-        # Pattern input row
-        pattern_row = ttk.Frame(sect)
-        pattern_row.pack(fill="x", padx=6, pady=(6,3))
-        ttk.Label(pattern_row, text="Pattern:", width=12).pack(side="left")
-        ttk.Entry(pattern_row, textvariable=var_search_pattern, width=30).pack(side="left", padx=(0,6), fill="x", expand=True)
-        ttk.Label(pattern_row, text="(e.g., IMG*, *-001-*, *.jpg)", foreground="gray", font=("Segoe UI", 8)).pack(side="left")
-
-        # Folder name row
-        folder_row = ttk.Frame(sect)
-        folder_row.pack(fill="x", padx=6, pady=(3,3))
-        ttk.Label(folder_row, text="Folder Name:", width=12).pack(side="left")
-        ttk.Entry(folder_row, textvariable=var_search_folder, width=30).pack(side="left", padx=(0,6), fill="x", expand=True)
-
-        # Button row
-        button_row = ttk.Frame(sect)
-        button_row.pack(fill="x", padx=6, pady=(3,6))
-        ttk.Button(button_row, text="🔍 Search & Collect Files", command=search_and_collect).pack(side="left", padx=(0,6))
-        ttk.Label(button_row, text="Searches all source directories for matching files", foreground="gray", font=("Segoe UI", 8)).pack(side="left")
-
-        ttk.Separator(target_tab, orient="horizontal").pack(fill="x", padx=0, pady=(0, 6))
-
-    else:
-        add_section(target_tab, title, sections[title])
+    add_section(actions_content, title, sections[title])
 
 progress_bar = ttk.Progressbar(root, orient="horizontal", mode="determinate")
 progress_bar.grid(row=3, column=0, columnspan=3, padx=4, pady=(0, 10), sticky="ew")
@@ -3581,7 +2063,7 @@ footer.columnconfigure(3, weight=1)
 ttk.Button(footer, text="Clear Preview", command=lambda: preview_text.delete("1.0", tk.END)).grid(row=0, column=0, pady=2, padx=4)
 ttk.Button(footer, text="🛑 Cancel Operation", command=cancel_operation).grid(row=0, column=1, pady=2, padx=4)
 ttk.Button(footer, text="Help", command=show_help).grid(row=0, column=2, pady=2, padx=4)
-ttk.Label(footer, text=VERSION, foreground="gray").grid(row=0, column=3, pady=2)
+ttk.Label(footer, text="v6.1 Enhanced Architecture", foreground="gray").grid(row=0, column=3, pady=2)
 
 # DnD Support
 if dnd_available:
@@ -3605,14 +2087,9 @@ def show_welcome():
     welcome = f"""
 Welcome to File Organizer — {VERSION}!
 
-🧠 AI SCANNER TAB (NEW!):
-• Intelligent Pattern Detection with Machine Learning
-• Learns from your organization choices
-• Confidence scoring: 80-99%
-• View learned patterns & statistics
-• The more you use it, the smarter it gets!
-
-✨ Core Features:
+🎉 New Features:
+• Sequential Pattern Detection (NEW!)
+• Pattern Scanner with 7 pattern types (NEW!)
 • Hash-based duplicate detection
 • Operation logging & UNDO
 • Memory-efficient processing
@@ -3622,12 +2099,11 @@ Welcome to File Organizer — {VERSION}!
 📁 Data Directory:
 {DATA_DIR.base_dir}
 
-Ready to organize! Try the 🧠 AI Scanner tab!
+Ready to organize!
 """
     preview_text.insert("1.0", welcome)
 
 root.after(100, show_welcome)
-root.after(150, load_recent_directories)  # v6.3: Load recent directories on startup
 
 # START GUI
 root.mainloop()

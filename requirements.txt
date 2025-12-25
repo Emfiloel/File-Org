@@ -1,0 +1,9 @@
+# File Organizer v7.0 Dependencies
+
+# Core dependencies
+Pillow>=10.0.0  # For EXIF data extraction from images
+
+# Development dependencies (optional)
+# pytest>=7.0.0  # For running tests
+# black>=23.0.0  # For code formatting
+# mypy>=1.0.0    # For type checking

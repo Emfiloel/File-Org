@@ -37,13 +37,8 @@ htmlcov/
 !.file_organizer_data/config.json
 !.file_organizer_data/folder_mappings.json
 
-# OLD PROJECT STRUCTURE - Archived (don't track changes)
-v6.1/
-v6.2/
-v6.3/
-Archives/
-Claude/
-ChatGPT Handover to CLaude/
+# User-specific runtime data (don't track changes)
+# Archive directories are tracked in git for history
 
 # IDE
 .vscode/
@@ -63,6 +58,7 @@ desktop.ini
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 

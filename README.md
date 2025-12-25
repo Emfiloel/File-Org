@@ -1,6 +1,6 @@
-# File Organizer v6.3
+# File Organizer v7.0
 
-> **Professional-grade file organization tool with intelligent pattern detection, GUI interface, and complete undo capability.**
+> **Professional-grade file organization tool with AI-powered pattern learning, intelligent duplicate detection, and complete undo capability.**
 
 [![Python Version](https://img.shields.io/badge/python-3.7%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -13,13 +13,15 @@
 File Organizer is a desktop application that automatically organizes your files into logical folder structures based on various criteria. Perfect for cleaning up Downloads folders, organizing photo collections, or managing large document libraries.
 
 **Key Features:**
+- 🧠 **AI Pattern Learning** - Learns from your choices and adapts to your workflow
+- 🔀 **Intelligent Duplicate Detection** - Date-aware collision handling with EXIF support
 - 🗂️ **7 Organization Modes** - Extension, Alphabet, Patterns, IMG/DSC detection, Sequential, and more
-- 🎨 **Modern Tabbed GUI** - Clean, intuitive interface built with tkinter
+- 🎨 **Modern Tabbed GUI** - Clean, intuitive 4-tab interface built with tkinter
 - ↩️ **Full Undo Support** - Every operation is logged and reversible
 - 🔍 **Pattern Search & Collect** - Find and collect files matching custom patterns
 - 📁 **Quick Folder Creation** - Auto-create A-Z, 0-9 folder structures
 - 🛡️ **Safe Operations** - Path traversal protection, atomic file moves, TOCTOU protection
-- 📊 **Operation History** - Complete logging with statistics
+- 📊 **Operation History** - Complete logging with statistics and pattern analytics
 - 🚀 **High Performance** - Memory-efficient generator pattern handles 100,000+ files
 
 ---
@@ -29,17 +31,16 @@ File Organizer is a desktop application that automatically organizes your files 
 ### Main Interface
 ```
 ┌─────────────────────────────────────────────────────┐
-│  File Organizer v6.3 GUI Enhancements               │
+│  File Organizer v7.0                                │
 ├─────────────────────────────────────────────────────┤
 │  Source: [Recent Directories Dropdown        ] 📂   │
 │  Target: [Recent Directories Dropdown        ] 📂   │
 │                                                     │
-│  [📂 Organize] [🔧 Tools] [⚙️ Advanced]            │
+│  [📂 Organize] [🧠 AI Scanner] [🔧 Tools] [⚙️ Adv] │
 │  ├─ By Extension                                    │
 │  ├─ Alphabetize                                     │
 │  ├─ IMG/DSC Detection                               │
-│  ├─ Smart Pattern                                   │
-│  └─ Sequential Pattern                              │
+│  └─ [NEW] AI Learning with Pattern Statistics       │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -55,11 +56,23 @@ File Organizer is a desktop application that automatically organizes your files 
 git clone https://github.com/Emfiloel/my-monetization-project.git
 cd my-monetization-project
 
+# Install dependencies
+pip install -r requirements.txt
+
 # Run the application
 python src/file_organizer.py
 ```
 
-**Option 2: Download executable**
+**Option 2: Install as package**
+```bash
+# Install the package
+pip install -e .
+
+# Run from anywhere
+file-organizer
+```
+
+**Option 3: Download executable** (Coming soon)
 ```bash
 # Download from Releases page (Windows only)
 # Double-click file_organizer.exe
@@ -124,19 +137,28 @@ Reduces nesting depth by N levels
 
 ---
 
-## ✨ v6.3 New Features
+## ✨ v7.0 New Features
 
-### 🆕 Auto-Create A-Z + 0-9 Folders
-One-click creation of alphabetical folder structure (A-Z, 0-9, !@#$)
+### 🧠 AI Pattern Learning
+The intelligent pattern detector learns from your choices and automatically applies patterns with increasing confidence:
+- 4-tier detection system (Learned, Camera, Sequential, Delimiter)
+- Pattern library persists between sessions
+- Pattern statistics dashboard
+- Preview mode before organizing
 
-### 🆕 Custom Pattern Search
-Search for files matching patterns (wildcards supported) and collect them into a folder
+### 🔀 Advanced Collision Detection
+Smart duplicate handling with date/time awareness:
+- EXIF date extraction for photos
+- `[d]` suffix for same-size duplicates
+- `{d}` suffix for different-size versions
+- `!Dupes` folder for true duplicates
+- `!Dupes Size` folder for same-day different versions
 
-### 🆕 Tabbed Interface
-Organized into 3 tabs: Organize, Tools, Advanced
+### 🏠 Enhanced In-Place Organization
+When organizing in-place, only root files are organized - files already in subfolders are left untouched
 
-### 🆕 Recent Directories
-Dropdown menus remember your last 10 source/target folders
+### 📊 Pattern Statistics
+View analytics about your learned patterns, confidence scores, and detection methods
 
 ---
 
@@ -167,18 +189,21 @@ Dropdown menus remember your last 10 source/target folders
 
 ### Run Unit Tests
 ```bash
-cd tests/
-python test_v6_3.py
+# Run the main test suite
+python tests/test_file_organizer.py
+
+# Or run comprehensive feature tests
+python tests/test_all_features.py
 ```
 
 **Expected output:**
 ```
 ======================================================================
-FILE ORGANIZER v6.3 - TEST SUITE
+FILE ORGANIZER v7.0 - TEST SUITE
 ======================================================================
 Ran 17 tests in 1.267s
 OK
-[PASS] ALL v6.3 TESTS PASSED
+[PASS] ALL TESTS PASSED
 ```
 
 ### Run Comprehensive Feature Tests
@@ -195,24 +220,28 @@ Runs 27 comprehensive tests covering all modes, features, and edge cases.
 ```
 file-organizer/
 ├── src/
-│   └── file_organizer.py          # Main application (v6.3)
+│   └── file_organizer.py          # Main application (v7.0)
 ├── tests/
-│   ├── test_v6_3.py                # Unit tests
-│   └── test_all_features.py        # Comprehensive test suite
+│   ├── test_file_organizer.py      # Unit tests (17 tests)
+│   └── test_all_features.py        # Comprehensive test suite (27 tests)
 ├── tools/
-│   ├── file_generator.py           # Test file generator
-│   └── build/                      # Build scripts for executables
+│   └── file_generator.py           # Test file generator
 ├── docs/
-│   ├── guides/                     # User guides
-│   ├── architecture/               # Technical documentation
-│   └── history/                    # Version history docs
+│   ├── CHANGELOG.md                # Version history
+│   └── CONTRIBUTING.md             # Contribution guidelines
 ├── archive/
-│   ├── v6.1/                       # Previous versions
-│   ├── v6.2/
-│   └── legacy/                     # Historical versions
+│   ├── v6.4/                       # v6.4 code + docs
+│   ├── v6.3/                       # v6.3 code + docs
+│   ├── v6.2/                       # v6.2 code + docs
+│   ├── v6.1/                       # v6.1 code + docs
+│   ├── legacy/                     # Historical versions
+│   └── development_history/        # Development documentation
+├── .github/
+│   └── workflows/                  # CI/CD pipelines (coming soon)
 ├── README.md                       # This file
-├── CHANGELOG.md                    # Version history
-└── LICENSE                         # MIT License
+├── LICENSE                         # MIT License
+├── requirements.txt                # Dependencies
+└── setup.py                        # Package installation
 ```
 
 ---
@@ -242,39 +271,45 @@ Configuration is stored in `.file_organizer_data/config.json`
 
 ## 📊 Version History
 
-### v6.3 (Current) - GUI Enhancements
+### v7.0 (Current) - Reorganization & Consolidation
+- 🎯 **Repository restructure** for clean v7.0 baseline
+- 🧠 **AI Pattern Learning** - 4-tier intelligent detection system
+- 🔀 **Advanced Collision Detection** - Date-aware EXIF duplicate handling
+- 🏠 **Enhanced In-Place** - Smart subfolder preservation
+- 📊 **Pattern Analytics** - Statistics dashboard for learned patterns
+- 🗂️ **Code Consolidation** - 82% reduction in code duplication
+- 📦 **Proper packaging** - setup.py and requirements.txt added
+- ✅ 17 tests passing (backward compatible with v6.4)
+
+### v6.4 - Consolidation (Archived)
+- ✨ Intelligent pattern scanner with machine learning
+- ✨ Advanced collision detection (EXIF, date/time aware)
+- ✨ Enhanced in-place organization (root-only mode)
+- ✨ Code quality improvements (82% less duplication)
+- 🎨 Dedicated AI Scanner tab in GUI
+
+### v6.3 - GUI Enhancements (Archived)
 - ✨ Auto-create A-Z + 0-9 folder structures
 - ✨ Custom pattern search and collect
 - ✨ Tabbed interface (Organize, Tools, Advanced)
 - ✨ Recent directories dropdown
-- ✅ 17 tests passing
 
-### v6.2 - In-Place Organization
+### v6.2 - In-Place Organization (Archived)
 - ✨ In-place organization mode
 - ✨ Skip folders with # prefix
-- ✅ 15 tests passing
 
-### v6.1 - Enhanced Architecture
+### v6.1 - Enhanced Architecture (Archived)
 - ✨ Undo progress bar
-- ✨ Comprehensive unit tests (30+ tests)
+- ✨ Comprehensive unit tests
 - ✨ Type hints throughout
 
-### v6.0 - Production Release
-- ✅ All 7 architectural blockers addressed
-- ✅ Transaction logging & undo
-- ✅ Memory efficiency (generator pattern)
-- ✅ TOCTOU protection
-- ✅ Path traversal security
-- ✅ GUI threading
-- ✅ Silent failure prevention
-
-**See [CHANGELOG.md](CHANGELOG.md) for complete history**
+**See [docs/CHANGELOG.md](docs/CHANGELOG.md) for complete history**
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
 
 **Areas we'd love help with:**
 - 🧪 More test coverage (currently 17 tests, target 50+)
@@ -310,19 +345,27 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 ## 🎯 Roadmap
 
-### v6.4 - Consolidation (Planned)
-- 🔄 Modular architecture refactor
-- 🧪 50% test coverage
-- 🤖 CI/CD with GitHub Actions
+### v7.1 - Testing & CI/CD (Next)
+- 🧪 Increase test coverage to 50%+
+- 🤖 GitHub Actions CI/CD pipeline
+- 📦 Automated releases
+- 🐳 Docker support
 
-### v7.0 - Innovation (Future)
+### v7.5 - Modular Architecture (Planned)
 - 🔌 Plugin architecture
-- 🤖 ML pattern learning
-- ☁️ Cloud storage integration
+- 🔧 Configurable organization rules
+- 📊 Advanced analytics
+- 🌐 Web-based configuration UI
+
+### v8.0 - Cloud & AI (Future)
+- ☁️ Cloud storage integration (Google Drive, Dropbox, OneDrive)
+- 🤖 Enhanced ML pattern learning
+- 🔍 Content-aware organization (image recognition, OCR)
 - 🌐 Web interface
 
 ---
 
 **Made with ❤️ by the File Organizer team**
 
-*Last updated: November 2025*
+*Last updated: December 2025*
+*Version: 7.0*
