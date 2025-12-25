@@ -35,6 +35,7 @@ htmlcov/
 **/.file_organizer_data/duplicates.db
 **/.file_organizer_data/learned_patterns.json
 **/.file_organizer_data/scan_results.json
+**/.file_organizer_data/missing_files.log
 # Keep config and mappings for sharing (these are safe)
 !**/.file_organizer_data/config.json
 !**/.file_organizer_data/folder_mappings.json

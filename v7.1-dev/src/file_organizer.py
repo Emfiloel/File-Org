@@ -2448,6 +2448,369 @@ def create_custom_hierarchy_gui():
         messagebox.showerror("Error", f"❌ {message}", parent=root)
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# ── MISSING FILE SCANNER (v7.1) ───────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def detect_file_patterns(directory: str) -> Dict[str, Dict]:
+    """
+    Detect numeric patterns in filenames and group files by pattern.
+
+    Returns:
+        Dict mapping pattern_key to {
+            'files': list of (filename, number) tuples,
+            'prefix': str,
+            'suffix': str,
+            'padding': int,
+            'extension': str,
+            'is_pure_numeric': bool
+        }
+    """
+    import re
+    from collections import defaultdict
+
+    if not os.path.isdir(directory):
+        return {}
+
+    patterns = defaultdict(lambda: {
+        'files': [],
+        'prefix': '',
+        'suffix': '',
+        'padding': 0,
+        'extension': '',
+        'is_pure_numeric': False
+    })
+
+    files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+
+    for filename in files:
+        name, ext = os.path.splitext(filename)
+
+        # Try to match numeric patterns
+        # Pattern 1: Pure numeric (001, 1, 0042, etc.)
+        match = re.match(r'^(\d+)$', name)
+        if match:
+            number = int(match.group(1))
+            padding = len(match.group(1))
+            pattern_key = f"PURE_NUMERIC_{ext}"
+            patterns[pattern_key]['files'].append((filename, number))
+            patterns[pattern_key]['prefix'] = ''
+            patterns[pattern_key]['suffix'] = ''
+            patterns[pattern_key]['padding'] = max(patterns[pattern_key]['padding'], padding)
+            patterns[pattern_key]['extension'] = ext
+            patterns[pattern_key]['is_pure_numeric'] = True
+            continue
+
+        # Pattern 2: Prefix + number (IMG_001, photo_42, etc.)
+        match = re.match(r'^(.+?)(\d+)$', name)
+        if match:
+            prefix = match.group(1)
+            number = int(match.group(2))
+            padding = len(match.group(2))
+            pattern_key = f"{prefix}_{ext}"
+            patterns[pattern_key]['files'].append((filename, number))
+            patterns[pattern_key]['prefix'] = prefix
+            patterns[pattern_key]['suffix'] = ''
+            patterns[pattern_key]['padding'] = max(patterns[pattern_key]['padding'], padding)
+            patterns[pattern_key]['extension'] = ext
+            patterns[pattern_key]['is_pure_numeric'] = False
+            continue
+
+        # Pattern 3: Prefix + number + suffix (IMG_001_final, etc.)
+        match = re.match(r'^(.+?)(\d+)(.+)$', name)
+        if match:
+            prefix = match.group(1)
+            number = int(match.group(2))
+            suffix = match.group(3)
+            padding = len(match.group(2))
+            pattern_key = f"{prefix}_NUM_{suffix}_{ext}"
+            patterns[pattern_key]['files'].append((filename, number))
+            patterns[pattern_key]['prefix'] = prefix
+            patterns[pattern_key]['suffix'] = suffix
+            patterns[pattern_key]['padding'] = max(patterns[pattern_key]['padding'], padding)
+            patterns[pattern_key]['extension'] = ext
+            patterns[pattern_key]['is_pure_numeric'] = False
+
+    # Filter out patterns with less than 2 files
+    return {k: v for k, v in patterns.items() if len(v['files']) >= 2}
+
+
+def find_missing_files(pattern_data: Dict) -> List[int]:
+    """
+    Find missing file numbers in a sequence.
+
+    For pure numeric files: assumes sequence starts at 1
+    For prefixed files: fills gaps between first and last existing file
+    """
+    if not pattern_data['files']:
+        return []
+
+    numbers = sorted([num for _, num in pattern_data['files']])
+    first_num = numbers[0]
+    last_num = numbers[-1]
+
+    # For pure numeric files, start from 1
+    if pattern_data['is_pure_numeric']:
+        start = 1
+    else:
+        start = first_num
+
+    # Find all missing numbers in range
+    existing_set = set(numbers)
+    missing = [n for n in range(start, last_num + 1) if n not in existing_set]
+
+    return missing
+
+
+def create_placeholder_files(directory: str, pattern_data: Dict, missing_numbers: List[int]) -> Tuple[bool, str, List[str]]:
+    """
+    Create empty placeholder files for missing numbers.
+
+    Returns:
+        (success, message, list of created filenames)
+    """
+    created_files = []
+
+    try:
+        for num in missing_numbers:
+            # Build filename
+            num_str = str(num).zfill(pattern_data['padding'])
+            filename = f"{pattern_data['prefix']}{num_str}{pattern_data['suffix']}{pattern_data['extension']}"
+            filepath = os.path.join(directory, filename)
+
+            # Create empty file
+            with open(filepath, 'w') as f:
+                pass  # Empty file
+
+            created_files.append(filename)
+
+        return True, f"Created {len(created_files)} placeholder files", created_files
+
+    except Exception as e:
+        return False, f"Error creating placeholders: {str(e)}", created_files
+
+
+def log_missing_files_operation(directory: str, pattern_key: str, pattern_data: Dict,
+                                 missing_numbers: List[int], created_files: List[str]):
+    """
+    Log missing file operation to missing_files.log
+    """
+    log_dir = os.path.join(directory, ".file_organizer_data")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "missing_files.log")
+
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(f"\n{'='*80}\n")
+            f.write(f"Timestamp: {timestamp}\n")
+            f.write(f"Directory: {directory}\n")
+            f.write(f"Pattern: {pattern_key}\n")
+
+            if pattern_data['is_pure_numeric']:
+                f.write(f"Type: Pure numeric (starts from 1)\n")
+            else:
+                f.write(f"Type: Prefixed pattern\n")
+                f.write(f"Prefix: '{pattern_data['prefix']}'\n")
+                if pattern_data['suffix']:
+                    f.write(f"Suffix: '{pattern_data['suffix']}'\n")
+
+            f.write(f"Padding: {pattern_data['padding']} digits\n")
+            f.write(f"Extension: {pattern_data['extension']}\n")
+
+            numbers = sorted([num for _, num in pattern_data['files']])
+            f.write(f"Range: {numbers[0]:0{pattern_data['padding']}d} - {numbers[-1]:0{pattern_data['padding']}d}\n")
+            f.write(f"Existing files: {len(pattern_data['files'])}\n")
+            f.write(f"Missing files: {len(missing_numbers)}\n")
+            f.write(f"\nCreated placeholders ({len(created_files)} files):\n")
+
+            # Group consecutive numbers for cleaner log
+            if created_files:
+                f.write(f"  {', '.join(created_files[:10])}")
+                if len(created_files) > 10:
+                    f.write(f" ... (and {len(created_files) - 10} more)")
+                f.write("\n")
+
+            f.write(f"{'='*80}\n")
+
+    except Exception as e:
+        logging.error(f"Failed to write to missing_files.log: {e}")
+
+
+def scan_missing_files_gui():
+    """
+    GUI wrapper for missing file scanner with preview and confirmation.
+    """
+    target_dir = (target_entry.get() or "").strip()
+
+    if not target_dir:
+        messagebox.showerror("Error", "Please select a target directory first.")
+        return
+
+    if not os.path.isdir(target_dir):
+        messagebox.showerror("Error", "Target directory does not exist.")
+        return
+
+    # Detect patterns
+    patterns = detect_file_patterns(target_dir)
+
+    if not patterns:
+        messagebox.showinfo(
+            "No Patterns Found",
+            "No numeric file patterns detected in this directory.\n\n"
+            "The scanner looks for:\n"
+            "• Pure numeric files (001.jpg, 042.pdf)\n"
+            "• Prefixed files (IMG_001.jpg, photo_42.png)\n\n"
+            "Need at least 2 files to establish a pattern.",
+            parent=root
+        )
+        return
+
+    # Show pattern selection dialog
+    dialog = tk.Toplevel(root)
+    dialog.title("Missing File Scanner - Select Pattern")
+    dialog.geometry("700x500")
+    dialog.transient(root)
+    dialog.grab_set()
+
+    tk.Label(
+        dialog,
+        text="📊 Detected File Patterns",
+        font=("Arial", 14, "bold")
+    ).pack(pady=10)
+
+    tk.Label(
+        dialog,
+        text=f"Directory: {target_dir}",
+        font=("Arial", 9),
+        fg="gray"
+    ).pack()
+
+    # Create listbox with pattern details
+    frame = ttk.Frame(dialog)
+    frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+    listbox = tk.Listbox(frame, font=("Courier", 10), height=15)
+    scrollbar = ttk.Scrollbar(frame, orient="vertical", command=listbox.yview)
+    listbox.configure(yscrollcommand=scrollbar.set)
+
+    listbox.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    pattern_list = []
+    for pattern_key, pattern_data in patterns.items():
+        missing = find_missing_files(pattern_data)
+        numbers = sorted([num for _, num in pattern_data['files']])
+
+        if pattern_data['is_pure_numeric']:
+            desc = f"Pure Numeric{pattern_data['extension']}"
+        else:
+            desc = f"{pattern_data['prefix']}###"
+            if pattern_data['suffix']:
+                desc += pattern_data['suffix']
+            desc += pattern_data['extension']
+
+        line = f"{desc:30} | Files: {len(pattern_data['files']):4} | Missing: {len(missing):4} | Range: {numbers[0]}-{numbers[-1]}"
+        listbox.insert(tk.END, line)
+        pattern_list.append((pattern_key, pattern_data, missing))
+
+    selected_pattern = [None]
+
+    def on_process():
+        selection = listbox.curselection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select a pattern to process.", parent=dialog)
+            return
+
+        idx = selection[0]
+        pattern_key, pattern_data, missing = pattern_list[idx]
+
+        if not missing:
+            messagebox.showinfo("No Missing Files", "This pattern has no missing files!", parent=dialog)
+            return
+
+        # Show confirmation with details
+        numbers = sorted([num for _, num in pattern_data['files']])
+
+        if pattern_data['is_pure_numeric']:
+            pattern_desc = f"Pure numeric, {pattern_data['padding']}-digit padding, {pattern_data['extension']}"
+        else:
+            pattern_desc = f"Prefix: '{pattern_data['prefix']}', {pattern_data['padding']}-digit padding, {pattern_data['extension']}"
+
+        # Build gap summary
+        gap_summary = []
+        if pattern_data['is_pure_numeric'] and numbers[0] > 1:
+            gap_summary.append(f"  • 1 - {numbers[0]-1} ({numbers[0]-1} files)")
+
+        # Find consecutive gaps
+        i = 0
+        while i < len(missing):
+            start = missing[i]
+            end = start
+            while i + 1 < len(missing) and missing[i + 1] == end + 1:
+                i += 1
+                end = missing[i]
+
+            if start == end:
+                gap_summary.append(f"  • {start} (1 file)")
+            else:
+                gap_summary.append(f"  • {start} - {end} ({end - start + 1} files)")
+            i += 1
+
+        gaps_text = "\n".join(gap_summary[:15])
+        if len(gap_summary) > 15:
+            gaps_text += f"\n  ... (and {len(gap_summary) - 15} more gaps)"
+
+        message = f"""📊 Missing File Detection Summary
+
+Pattern: {pattern_desc}
+First file: {numbers[0]:0{pattern_data['padding']}d}{pattern_data['extension']}
+Last file: {numbers[-1]:0{pattern_data['padding']}d}{pattern_data['extension']}
+
+Existing files: {len(pattern_data['files'])}
+Missing files: {len(missing)}
+
+Gaps to fill:
+{gaps_text}
+
+Create {len(missing)} placeholder files?"""
+
+        if messagebox.askyesno("Confirm Creation", message, parent=dialog):
+            success, msg, created = create_placeholder_files(target_dir, pattern_data, missing)
+
+            if success:
+                # Log operation
+                log_missing_files_operation(target_dir, pattern_key, pattern_data, missing, created)
+
+                messagebox.showinfo(
+                    "Success",
+                    f"✓ {msg}\n\nLogged to .file_organizer_data/missing_files.log",
+                    parent=dialog
+                )
+                dialog.destroy()
+            else:
+                messagebox.showerror("Error", f"❌ {msg}", parent=dialog)
+
+    def on_cancel():
+        dialog.destroy()
+
+    # Buttons
+    button_frame = ttk.Frame(dialog)
+    button_frame.pack(pady=10)
+
+    ttk.Button(button_frame, text="Process Selected Pattern", command=on_process).pack(side="left", padx=5)
+    ttk.Button(button_frame, text="Cancel", command=on_cancel).pack(side="left", padx=5)
+
+    tk.Label(
+        dialog,
+        text="💡 Tip: Select a pattern and click 'Process' to create missing placeholders",
+        font=("Arial", 9),
+        fg="gray"
+    ).pack(pady=5)
+
+
 def search_and_collect():
     """
     Search for files matching a custom pattern and collect them into a folder.
@@ -3894,6 +4257,7 @@ sections = {
     "📁 Folder Tools": [
         ("Create A-Z + 0-9 Folders", create_alphanumeric_folders),
         ("Create Custom Hierarchy", create_custom_hierarchy_gui),
+        ("🔍 Scan for Missing Files", scan_missing_files_gui),
     ],
     "🔍 Pattern Search": [
         ("Search & Collect by Pattern", search_and_collect),
