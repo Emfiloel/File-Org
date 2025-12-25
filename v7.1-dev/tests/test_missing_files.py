@@ -288,7 +288,7 @@ class TestMissingFileScanner(unittest.TestCase):
     # ═══════════════════════════════════════════════════════════════════════
 
     def test_log_creation(self):
-        """Test that missing_files.log is created"""
+        """Test that missing_files.log is created in parent directory"""
         self.create_test_files(['001.jpg', '003.jpg'])
 
         patterns = detect_file_patterns(self.test_dir)
@@ -303,13 +303,14 @@ class TestMissingFileScanner(unittest.TestCase):
             self.test_dir, pattern_key, pattern_data, missing, created
         )
 
+        parent_dir = os.path.dirname(self.test_dir)
         log_path = os.path.join(
-            self.test_dir, '.file_organizer_data', 'missing_files.log'
+            parent_dir, '.file_organizer_data', 'missing_files.log'
         )
         self.assertTrue(os.path.exists(log_path))
 
     def test_log_content(self):
-        """Test that log contains expected information"""
+        """Test that log contains expected information in new format"""
         self.create_test_files(['001.jpg', '005.jpg'])
 
         patterns = detect_file_patterns(self.test_dir)
@@ -324,17 +325,21 @@ class TestMissingFileScanner(unittest.TestCase):
             self.test_dir, pattern_key, pattern_data, missing, created
         )
 
+        parent_dir = os.path.dirname(self.test_dir)
         log_path = os.path.join(
-            self.test_dir, '.file_organizer_data', 'missing_files.log'
+            parent_dir, '.file_organizer_data', 'missing_files.log'
         )
 
         with open(log_path, 'r', encoding='utf-8') as f:
             log_content = f.read()
 
-        self.assertIn('Pattern:', log_content)
-        self.assertIn('Pure numeric', log_content)
-        self.assertIn('Missing files:', log_content)
-        self.assertIn('.jpg', log_content)
+        self.assertIn('Parent Directory:', log_content)
+        self.assertIn('Folder:', log_content)
+        self.assertIn('Missing Files:', log_content)
+        self.assertIn('002.jpg', log_content)
+        self.assertIn('003.jpg', log_content)
+        self.assertIn('004.jpg', log_content)
+        self.assertIn('Total:', log_content)
 
     # ═══════════════════════════════════════════════════════════════════════
     # ── EDGE CASES ────────────────────────────────────────────────────────

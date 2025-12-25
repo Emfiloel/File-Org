@@ -2593,46 +2593,32 @@ def create_placeholder_files(directory: str, pattern_data: Dict, missing_numbers
 def log_missing_files_operation(directory: str, pattern_key: str, pattern_data: Dict,
                                  missing_numbers: List[int], created_files: List[str]):
     """
-    Log missing file operation to missing_files.log
+    Log missing file operation to missing_files.log in a centralized location
     """
-    log_dir = os.path.join(directory, ".file_organizer_data")
+    # Use a centralized log file in the parent of the scanned directory
+    parent_dir = os.path.dirname(directory)
+    log_dir = os.path.join(parent_dir, ".file_organizer_data")
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, "missing_files.log")
 
     from datetime import datetime
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    folder_name = os.path.basename(directory)
+
     try:
         with open(log_file, 'a', encoding='utf-8') as f:
             f.write(f"\n{'='*80}\n")
+            f.write(f"Parent Directory: {parent_dir}\n")
+            f.write(f"Folder: {folder_name}\n")
             f.write(f"Timestamp: {timestamp}\n")
-            f.write(f"Directory: {directory}\n")
-            f.write(f"Pattern: {pattern_key}\n")
+            f.write(f"\nMissing Files:\n")
 
-            if pattern_data['is_pure_numeric']:
-                f.write(f"Type: Pure numeric (starts from 1)\n")
-            else:
-                f.write(f"Type: Prefixed pattern\n")
-                f.write(f"Prefix: '{pattern_data['prefix']}'\n")
-                if pattern_data['suffix']:
-                    f.write(f"Suffix: '{pattern_data['suffix']}'\n")
+            # Write complete list of all created files (no truncation)
+            for filename in created_files:
+                f.write(f"  {filename}\n")
 
-            f.write(f"Padding: {pattern_data['padding']} digits\n")
-            f.write(f"Extension: {pattern_data['extension']}\n")
-
-            numbers = sorted([num for _, num in pattern_data['files']])
-            f.write(f"Range: {numbers[0]:0{pattern_data['padding']}d} - {numbers[-1]:0{pattern_data['padding']}d}\n")
-            f.write(f"Existing files: {len(pattern_data['files'])}\n")
-            f.write(f"Missing files: {len(missing_numbers)}\n")
-            f.write(f"\nCreated placeholders ({len(created_files)} files):\n")
-
-            # Group consecutive numbers for cleaner log
-            if created_files:
-                f.write(f"  {', '.join(created_files[:10])}")
-                if len(created_files) > 10:
-                    f.write(f" ... (and {len(created_files) - 10} more)")
-                f.write("\n")
-
+            f.write(f"\nTotal: {len(created_files)} files created\n")
             f.write(f"{'='*80}\n")
 
     except Exception as e:
@@ -2784,9 +2770,12 @@ Create {len(missing)} placeholder files?"""
                 # Log operation
                 log_missing_files_operation(target_dir, pattern_key, pattern_data, missing, created)
 
+                parent_dir = os.path.dirname(target_dir)
+                log_path = os.path.join(parent_dir, ".file_organizer_data", "missing_files.log")
+
                 messagebox.showinfo(
                     "Success",
-                    f"✓ {msg}\n\nLogged to .file_organizer_data/missing_files.log",
+                    f"✓ {msg}\n\nLogged to:\n{log_path}",
                     parent=dialog
                 )
                 dialog.destroy()
