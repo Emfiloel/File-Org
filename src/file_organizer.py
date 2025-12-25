@@ -48,6 +48,8 @@ import time
 import threading
 import queue
 import platform
+import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass
@@ -135,10 +137,10 @@ class Config:
                 with open(DATA_DIR.config_file, 'r') as f:
                     return {**self.DEFAULT_CONFIG, **json.load(f)}
             except (json.JSONDecodeError, ValueError) as e:
-                print(f"Config file corrupted, using defaults: {e}")
+                APP_LOGGER.warning(f"Config file corrupted, using defaults: {e}")
                 return self.DEFAULT_CONFIG.copy()
             except (IOError, OSError) as e:
-                print(f"Cannot read config file, using defaults: {e}")
+                APP_LOGGER.error(f"Cannot read config file, using defaults: {e}")
                 return self.DEFAULT_CONFIG.copy()
         else:
             self._save_config(self.DEFAULT_CONFIG)
@@ -150,7 +152,7 @@ class Config:
             with open(DATA_DIR.config_file, 'w') as f:
                 json.dump(config, f, indent=2)
         except (IOError, OSError, PermissionError) as e:
-            print(f"Failed to save config: {e}")
+            APP_LOGGER.error(f"Failed to save config: {e}")
 
     def get(self, key: str, default=None):
         """Get config value with dot notation (e.g., 'duplicate_detection.method')"""
@@ -328,6 +330,76 @@ class OperationLogger:
 
 # Global logger instance
 LOGGER = OperationLogger()
+
+# ==============================
+# ENHANCED STRUCTURED LOGGING
+# ==============================
+class FileOrganizerLogger:
+    """
+    Enhanced logging with rotation and structured output.
+
+    Features:
+    - Rotating log files (5MB max, 3 backups)
+    - Multiple log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    - Formatted output with timestamp, level, function name, line number
+    - Thread-safe logging
+    """
+
+    def __init__(self, log_dir: Path):
+        self.log_file = log_dir / "file_organizer.log"
+        self.logger = logging.getLogger("FileOrganizer")
+        self.logger.setLevel(logging.DEBUG)
+
+        # Remove any existing handlers to avoid duplicates
+        self.logger.handlers.clear()
+
+        # Rotating file handler (5MB max, 3 backups)
+        handler = RotatingFileHandler(
+            self.log_file,
+            maxBytes=5*1024*1024,  # 5 MB
+            backupCount=3,
+            encoding='utf-8'
+        )
+
+        # Format with timestamp, level, function name, line number, and message
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)-8s - %(funcName)s:%(lineno)d - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+
+    def debug(self, msg: str, **kwargs):
+        """Debug level logging"""
+        extra_info = f" | {kwargs}" if kwargs else ""
+        self.logger.debug(f"{msg}{extra_info}")
+
+    def info(self, msg: str, **kwargs):
+        """Info level logging"""
+        extra_info = f" | {kwargs}" if kwargs else ""
+        self.logger.info(f"{msg}{extra_info}")
+
+    def warning(self, msg: str, **kwargs):
+        """Warning level logging"""
+        extra_info = f" | {kwargs}" if kwargs else ""
+        self.logger.warning(f"{msg}{extra_info}")
+
+    def error(self, msg: str, **kwargs):
+        """Error level logging"""
+        extra_info = f" | {kwargs}" if kwargs else ""
+        self.logger.error(f"{msg}{extra_info}")
+
+    def critical(self, msg: str, **kwargs):
+        """Critical level logging"""
+        extra_info = f" | {kwargs}" if kwargs else ""
+        self.logger.critical(f"{msg}{extra_info}")
+
+    def exception(self, msg: str):
+        """Log exception with stack trace"""
+        self.logger.exception(msg)
+
+# Global enhanced logger instance
+APP_LOGGER = FileOrganizerLogger(DATA_DIR.base_dir)
 
 # ==============================
 # HASH-BASED DUPLICATE DETECTION
@@ -1126,17 +1198,17 @@ def load_mappings():
             with open(DATA_DIR.mappings_file, "r", encoding="utf-8") as f:
                 USER_MAP = json.load(f)
         except (json.JSONDecodeError, ValueError) as e:
-            print(f"Mappings file corrupted, resetting: {e}")
+            APP_LOGGER.warning(f"Mappings file corrupted, resetting: {e}")
             USER_MAP = {}
         except (IOError, OSError) as e:
-            print(f"Cannot read mappings file, resetting: {e}")
+            APP_LOGGER.error(f"Cannot read mappings file, resetting: {e}")
             USER_MAP = {}
 def save_mappings():
     try:
         with open(DATA_DIR.mappings_file, "w", encoding="utf-8") as f:
             json.dump(USER_MAP, f, ensure_ascii=False, indent=2)
     except (IOError, OSError, PermissionError) as e:
-        print(f"Failed to save mappings: {e}")
+        APP_LOGGER.error(f"Failed to save mappings: {e}")
 def make_key(filename: str) -> str:
     base, _ = os.path.splitext(filename)
     base = re.sub(r'\s*[\-_]?\(\d+\)$', '', base)
@@ -1272,10 +1344,10 @@ class PatternLearner:
                 with open(self.patterns_file, 'r') as f:
                     return json.load(f)
             except (json.JSONDecodeError, ValueError) as e:
-                print(f"Patterns file corrupted, resetting: {e}")
+                APP_LOGGER.warning(f"Patterns file corrupted, resetting: {e}")
                 return {}
             except (IOError, OSError) as e:
-                print(f"Cannot read patterns file, resetting: {e}")
+                APP_LOGGER.error(f"Cannot read patterns file, resetting: {e}")
                 return {}
         return {}
 
@@ -1619,7 +1691,7 @@ class DatabaseScanner:
             with open(scan_file, 'w') as f:
                 json.dump(results_copy, f, indent=2)
         except (IOError, OSError, PermissionError) as e:
-            print(f"Failed to save scan results: {e}")
+            APP_LOGGER.error(f"Failed to save scan results: {e}")
 
     def load_scan_results(self) -> bool:
         """Load previous scan results"""
@@ -1636,10 +1708,10 @@ class DatabaseScanner:
 
                 return True
             except (json.JSONDecodeError, ValueError) as e:
-                print(f"Scan results file corrupted: {e}")
+                APP_LOGGER.warning(f"Scan results file corrupted: {e}")
                 return False
             except (IOError, OSError) as e:
-                print(f"Cannot read scan results file: {e}")
+                APP_LOGGER.error(f"Cannot read scan results file: {e}")
                 return False
         return False
 
