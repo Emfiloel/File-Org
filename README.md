@@ -2,8 +2,10 @@
 
 > **Professional-grade file organization tool with AI-powered pattern learning, intelligent duplicate detection, and complete undo capability.**
 
-[![Python Version](https://img.shields.io/badge/python-3.7%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![CI](https://github.com/Emfiloel/File-Org/workflows/CI/badge.svg)](https://github.com/Emfiloel/File-Org/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/Emfiloel/File-Org/workflows/Code%20Quality/badge.svg)](https://github.com/Emfiloel/File-Org/actions/workflows/code-quality.yml)
 [![Tests](https://img.shields.io/badge/tests-17%20passing-brightgreen.svg)](tests/)
 
 ---
