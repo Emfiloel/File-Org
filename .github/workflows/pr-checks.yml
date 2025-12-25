@@ -75,11 +75,12 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r v7.0/requirements.txt
 
     - name: Run tests
       run: |
-        python tests/test_file_organizer.py
+        cd v7.0
+        python -m unittest discover -s tests -p "test_*.py"
 
     - name: Comment test results
       if: always()
