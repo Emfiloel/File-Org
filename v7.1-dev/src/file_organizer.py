@@ -4352,6 +4352,7 @@ for title in sorted(sections.keys()):
         button_row.pack(fill="x", padx=6, pady=(6,3))
         ttk.Button(button_row, text="Create A-Z + 0-9 Folders", command=create_alphanumeric_folders).pack(side="left", padx=(0, 6))
         ttk.Button(button_row, text="Create Custom Hierarchy", command=create_custom_hierarchy_gui).pack(side="left", padx=(0, 6))
+        ttk.Button(button_row, text="🔍 Scan for Missing Files", command=scan_missing_files_gui).pack(side="left", padx=(0, 6))
 
         # Options row (for A-Z + 0-9 creation)
         options_row = ttk.Frame(sect)
