@@ -34,8 +34,8 @@ class TestVersionConstant(unittest.TestCase):
         self.assertIsNotNone(VERSION)
 
     def test_version_value(self):
-        """VERSION should be v7.0"""
-        self.assertIn("7.0", VERSION)
+        """VERSION should be v7.1-dev"""
+        self.assertIn("7.1", VERSION)
 
 
 class TestFeature1_AutoCreateFolders(unittest.TestCase):
