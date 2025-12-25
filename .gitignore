@@ -28,14 +28,16 @@ wheels/
 htmlcov/
 .hypothesis/
 
-# File Organizer runtime data (user-specific)
-.file_organizer_data/*.db
-.file_organizer_data/*.log
-.file_organizer_data/operations.jsonl
-.file_organizer_data/duplicates.db
-# Keep config and mappings for sharing
-!.file_organizer_data/config.json
-!.file_organizer_data/folder_mappings.json
+# File Organizer runtime data (user-specific) - NEVER commit these!
+**/.file_organizer_data/*.db
+**/.file_organizer_data/*.log
+**/.file_organizer_data/operations.jsonl
+**/.file_organizer_data/duplicates.db
+**/.file_organizer_data/learned_patterns.json
+**/.file_organizer_data/scan_results.json
+# Keep config and mappings for sharing (these are safe)
+!**/.file_organizer_data/config.json
+!**/.file_organizer_data/folder_mappings.json
 
 # User-specific runtime data (don't track changes)
 # Archive directories are tracked in git for history
