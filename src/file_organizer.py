@@ -2217,6 +2217,51 @@ def by_detected_or_prompt(filename: str, allow_prompt: bool = True) -> Optional[
             return USER_MAP[key]
     return None
 
+
+# ==============================
+# DATE-BASED ORGANIZATION (v7.0)
+# ==============================
+def format_date_year(dt: datetime) -> str:
+    """Format datetime as YYYY"""
+    return dt.strftime("%Y")
+
+
+def format_date_month(dt: datetime) -> str:
+    """Format datetime as YYYY-MM"""
+    return dt.strftime("%Y-%m")
+
+
+def format_date_full(dt: datetime) -> str:
+    """Format datetime as YYYY-MM-DD"""
+    return dt.strftime("%Y-%m-%d")
+
+
+def by_date_year(filename: str) -> Optional[str]:
+    """Organize by year (YYYY)"""
+    filepath = os.path.join(source_entry.get() if hasattr(source_entry, 'get') else '', filename)
+    dt = get_file_datetime(filepath)
+    if dt:
+        return format_date_year(dt)
+    return None
+
+
+def by_date_month(filename: str) -> Optional[str]:
+    """Organize by year-month (YYYY-MM)"""
+    filepath = os.path.join(source_entry.get() if hasattr(source_entry, 'get') else '', filename)
+    dt = get_file_datetime(filepath)
+    if dt:
+        return format_date_month(dt)
+    return None
+
+
+def by_date_full(filename: str) -> Optional[str]:
+    """Organize by full date (YYYY-MM-DD)"""
+    filepath = os.path.join(source_entry.get() if hasattr(source_entry, 'get') else '', filename)
+    dt = get_file_datetime(filepath)
+    if dt:
+        return format_date_full(dt)
+    return None
+
 def by_sequential(filename: str) -> Optional[str]:
     """Sequential pattern detection for organization mode"""
     return detect_sequential_pattern(filename)
@@ -3408,6 +3453,12 @@ sections = {
         ("IMG/DSC Only", lambda: run_organizer(by_img_dsc, operation_name="IMG/DSC")),
         ("Preview", lambda: run_organizer(by_img_dsc, preview=True)),
     ],
+    "📅 By Date": [
+        ("By Year (YYYY)", lambda: run_organizer(by_date_year, operation_name="By Year")),
+        ("By Month (YYYY-MM)", lambda: run_organizer(by_date_month, operation_name="By Month")),
+        ("By Day (YYYY-MM-DD)", lambda: run_organizer(by_date_full, operation_name="By Date")),
+        ("Preview", lambda: run_organizer(by_date_year, preview=True)),
+    ],
     "🧠 Intelligent Scanner": [
         ("🧠 Organize with AI Learning", lambda: run_organizer(by_intelligent, operation_name="Intelligent Pattern")),
         ("👁️ Preview Patterns", lambda: run_organizer(by_intelligent, preview=True)),
@@ -3437,7 +3488,7 @@ sections = {
 # ── TABBED ACTIONS (v6.3) ──────────────────────────────────────────────────────
 # Group sections into tabs for better organization
 tab_groups = {
-    "📂 Organize": ["By Extension", "Alphabetize", "IMG/DSC"],
+    "📂 Organize": ["By Extension", "Alphabetize", "IMG/DSC", "📅 By Date"],
     "🧠 AI Scanner": ["🧠 Intelligent Scanner"],
     "📊 DB Scanner": ["📊 Database Scanner"],
     "🔧 Tools": ["📤 Extract", "📁 Folder Tools", "🔍 Pattern Search"],
