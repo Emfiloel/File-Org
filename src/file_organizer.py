@@ -567,17 +567,89 @@ class OperationResult:
 # ==============================
 # THREADING SUPPORT
 # ==============================
-# Global variables for thread control
+class OperationManager:
+    """
+    Thread-safe operation management for concurrent file operations.
+
+    Provides centralized management of:
+    - Current operation thread
+    - Cancellation signals
+    - Thread-safe state access
+    """
+
+    def __init__(self):
+        self._current_thread: Optional[threading.Thread] = None
+        self._cancel_event = threading.Event()
+        self._lock = threading.Lock()
+        self._user_map_lock = threading.Lock()
+
+    def start_operation(self, target, *args, **kwargs) -> Tuple[bool, str]:
+        """
+        Start operation with proper locking.
+
+        Args:
+            target: Function to run in thread
+            *args, **kwargs: Arguments for target function
+
+        Returns:
+            (success, message): Tuple indicating if operation started successfully
+        """
+        with self._lock:
+            if self._current_thread and self._current_thread.is_alive():
+                return False, "Operation already in progress"
+
+            self._cancel_event.clear()
+            self._current_thread = threading.Thread(
+                target=target,
+                args=args,
+                kwargs=kwargs,
+                daemon=True
+            )
+            self._current_thread.start()
+            return True, "Operation started"
+
+    def cancel_operation(self):
+        """Thread-safe cancellation"""
+        with self._lock:
+            self._cancel_event.set()
+
+    def is_cancelled(self) -> bool:
+        """Check if operation was cancelled"""
+        return self._cancel_event.is_set()
+
+    def is_operation_running(self) -> bool:
+        """Check if an operation is currently running"""
+        with self._lock:
+            return self._current_thread is not None and self._current_thread.is_alive()
+
+    def update_user_map(self, key: str, value: str):
+        """Thread-safe USER_MAP update"""
+        with self._user_map_lock:
+            USER_MAP[key] = value
+            save_mappings()
+
+    def get_user_map_value(self, key: str) -> Optional[str]:
+        """Thread-safe USER_MAP read"""
+        with self._user_map_lock:
+            return USER_MAP.get(key)
+
+# Global instance
+OPERATION_MANAGER = OperationManager()
+
+# Legacy global variables for backward compatibility
+# These are now deprecated in favor of OPERATION_MANAGER
 current_operation_thread = None
 cancel_event = threading.Event()
 operation_queue = queue.Queue()
 
 def cancel_operation():
-    """Cancel the currently running operation"""
-    cancel_event.set()
-    if current_operation_thread and current_operation_thread.is_alive():
-        # Thread will check cancel_event and stop gracefully
-        pass
+    """
+    Cancel the currently running operation.
+
+    DEPRECATED: Use OPERATION_MANAGER.cancel_operation() instead.
+    This function is maintained for backward compatibility.
+    """
+    OPERATION_MANAGER.cancel_operation()
 
 # ==============================
 # GUI WINDOW SETUP
@@ -1734,8 +1806,6 @@ def collect_files_chunked(source_dirs: List[str], logic_func, chunk_size: int = 
 # ORGANIZER ENGINE (THREADED)
 # ==============================
 def run_organizer(folder_logic, preview=False, operation_name="Organize"):
-    global current_operation_thread
-
     source_dirs = get_source_dirs()
     target_dir  = (target_entry.get() or "").strip()
 
@@ -1744,6 +1814,11 @@ def run_organizer(folder_logic, preview=False, operation_name="Organize"):
     if not is_valid:
         error_msg = "Pre-flight validation failed:\n\n" + "\n".join(issues)
         messagebox.showerror("Validation Error", error_msg)
+        return
+
+    # Check if operation already running
+    if OPERATION_MANAGER.is_operation_running():
+        messagebox.showwarning("Busy", "⚠ An operation is already in progress. Please wait or cancel it first.")
         return
 
     # Clear duplicate detector session for new scan
@@ -1771,8 +1846,6 @@ def run_organizer(folder_logic, preview=False, operation_name="Organize"):
             return
 
         # Execute moves in background thread for GUI responsiveness
-        cancel_event.clear()  # Reset cancel flag
-
         def worker_thread():
             """Background thread for file operations"""
             total = 0
@@ -1782,7 +1855,7 @@ def run_organizer(folder_logic, preview=False, operation_name="Organize"):
             try:
                 for src, dst_folder, fname in file_gen:
                     # Check if user cancelled
-                    if cancel_event.is_set():
+                    if OPERATION_MANAGER.is_cancelled():
                         operation_queue.put({'type': 'cancelled', 'total': total, 'moved': moved})
                         return
 
@@ -1796,12 +1869,17 @@ def run_organizer(folder_logic, preview=False, operation_name="Organize"):
 
                 # Operation complete
                 operation_queue.put({'type': 'complete', 'total': total, 'moved': moved})
+            except (IOError, OSError, PermissionError) as e:
+                operation_queue.put({'type': 'error', 'message': f"File operation error: {str(e)}"})
             except Exception as e:
-                operation_queue.put({'type': 'error', 'message': str(e)})
+                operation_queue.put({'type': 'error', 'message': f"Unexpected error: {str(e)}"})
 
-        # Start worker thread
-        current_operation_thread = threading.Thread(target=worker_thread, daemon=True)
-        current_operation_thread.start()
+        # Start worker thread using OperationManager
+        success, msg = OPERATION_MANAGER.start_operation(worker_thread)
+        if not success:
+            messagebox.showwarning("Busy", f"⚠ {msg}")
+            LOGGER.end_operation()
+            return
 
         # Start progress monitoring
         progress_bar["mode"] = "indeterminate"
