@@ -134,7 +134,11 @@ class Config:
             try:
                 with open(DATA_DIR.config_file, 'r') as f:
                     return {**self.DEFAULT_CONFIG, **json.load(f)}
-            except Exception:
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"Config file corrupted, using defaults: {e}")
+                return self.DEFAULT_CONFIG.copy()
+            except (IOError, OSError) as e:
+                print(f"Cannot read config file, using defaults: {e}")
                 return self.DEFAULT_CONFIG.copy()
         else:
             self._save_config(self.DEFAULT_CONFIG)
@@ -145,7 +149,7 @@ class Config:
         try:
             with open(DATA_DIR.config_file, 'w') as f:
                 json.dump(config, f, indent=2)
-        except Exception as e:
+        except (IOError, OSError, PermissionError) as e:
             print(f"Failed to save config: {e}")
 
     def get(self, key: str, default=None):
@@ -361,7 +365,11 @@ class DuplicateDetector:
                 for chunk in iter(lambda: f.read(CONFIG.get('duplicate_detection.chunk_size', 8192)), b''):
                     hasher.update(chunk)
             return hasher.hexdigest()
-        except Exception:
+        except FileNotFoundError:
+            return None
+        except PermissionError:
+            return None
+        except (IOError, OSError):
             return None
 
     def check_duplicate(self, filename: str, size: int, filepath: str) -> Tuple[bool, str]:
@@ -591,7 +599,8 @@ for t in (theme, "clam", "vista", "xpnative", "default"):
     try:
         style.theme_use(t)
         break
-    except Exception:
+    except tk.TclError:
+        # Theme not available, try next option
         pass
 
 FONT_BASE  = (CONFIG.get('ui.font_base', 'Segoe UI'), CONFIG.get('ui.font_size', 10))
@@ -814,14 +823,27 @@ def report_error(title: str, message: str):
     try:
         preview_text.insert("end", f"\n{sep}\n{title}: {message}\n{sep}\n")
         preview_text.see("end")
-    except Exception:
+    except (AttributeError, tk.TclError):
+        # Widget doesn't exist or isn't ready, fall back to console
         print(f"[{title}] {message}")
 
 def get_file_size(filepath: str) -> int:
-    """Get file size in bytes"""
+    """
+    Get file size in bytes.
+
+    Returns:
+        File size in bytes, or -1 if error occurs
+    """
     try:
         return os.path.getsize(filepath)
-    except Exception:
+    except FileNotFoundError:
+        # File doesn't exist
+        return -1
+    except PermissionError:
+        # No permission to access file
+        return -1
+    except OSError as e:
+        # Other OS errors (network issues, invalid path, etc.)
         return -1
 
 def get_file_datetime(filepath: str) -> Optional[datetime]:
@@ -850,15 +872,21 @@ def get_file_datetime(filepath: str) -> Optional[datetime]:
                         if tag_name in ('DateTimeOriginal', 'DateTime'):
                             # Parse EXIF datetime format: "2024:01:15 10:30:00"
                             return datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
-            except Exception:
-                pass  # PIL not available or EXIF read failed
+            except (ImportError, AttributeError):
+                pass  # PIL not available or no EXIF data
+            except (OSError, ValueError):
+                pass  # Cannot read EXIF or parse datetime
 
         # Fallback: use file modification time
         mtime = os.path.getmtime(filepath)
         return datetime.fromtimestamp(mtime)
 
-    except Exception:
-        return None
+    except FileNotFoundError:
+        return None  # File doesn't exist
+    except PermissionError:
+        return None  # No permission to access file
+    except (OSError, ValueError) as e:
+        return None  # Cannot get file time or convert to datetime
 
 def move_file(src: str, dst_folder: str, filename: str) -> bool:
     """
@@ -1025,14 +1053,18 @@ def load_mappings():
         try:
             with open(DATA_DIR.mappings_file, "r", encoding="utf-8") as f:
                 USER_MAP = json.load(f)
-        except Exception:
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"Mappings file corrupted, resetting: {e}")
+            USER_MAP = {}
+        except (IOError, OSError) as e:
+            print(f"Cannot read mappings file, resetting: {e}")
             USER_MAP = {}
 def save_mappings():
     try:
         with open(DATA_DIR.mappings_file, "w", encoding="utf-8") as f:
             json.dump(USER_MAP, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    except (IOError, OSError, PermissionError) as e:
+        print(f"Failed to save mappings: {e}")
 def make_key(filename: str) -> str:
     base, _ = os.path.splitext(filename)
     base = re.sub(r'\s*[\-_]?\(\d+\)$', '', base)
@@ -1167,7 +1199,11 @@ class PatternLearner:
             try:
                 with open(self.patterns_file, 'r') as f:
                     return json.load(f)
-            except Exception:
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"Patterns file corrupted, resetting: {e}")
+                return {}
+            except (IOError, OSError) as e:
+                print(f"Cannot read patterns file, resetting: {e}")
                 return {}
         return {}
 
@@ -1510,7 +1546,7 @@ class DatabaseScanner:
 
             with open(scan_file, 'w') as f:
                 json.dump(results_copy, f, indent=2)
-        except Exception as e:
+        except (IOError, OSError, PermissionError) as e:
             print(f"Failed to save scan results: {e}")
 
     def load_scan_results(self) -> bool:
@@ -1527,7 +1563,11 @@ class DatabaseScanner:
                         folder_data["patterns"] = set(folder_data["patterns"])
 
                 return True
-            except Exception:
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"Scan results file corrupted: {e}")
+                return False
+            except (IOError, OSError) as e:
+                print(f"Cannot read scan results file: {e}")
                 return False
         return False
 
@@ -1580,7 +1620,8 @@ def validate_operation(source_dirs: List[str], target_dir: str) -> Tuple[bool, L
             try:
                 if os.path.commonpath([os.path.abspath(target_dir), os.path.abspath(src)]) == os.path.abspath(src):
                     issues.append(f"❌ Target cannot be inside source: {src}")
-            except Exception:
+            except ValueError:
+                # Paths are on different drives (Windows) or incompatible, which is fine
                 pass
 
     # Check available space
@@ -1590,7 +1631,8 @@ def validate_operation(source_dirs: List[str], target_dir: str) -> Tuple[bool, L
             free_gb = stat.free / (1024**3)
             if free_gb < 1:
                 issues.append(f"⚠ Low disk space: {free_gb:.2f} GB free")
-    except Exception:
+    except (OSError, FileNotFoundError):
+        # Can't check disk space, but don't block the operation
         pass
 
     return len(issues) == 0, issues
@@ -2055,6 +2097,53 @@ def parse_folder_hierarchy(hierarchy_string: str) -> List[str]:
     return folders
 
 
+def validate_folder_hierarchy(hierarchy: str) -> Tuple[bool, str]:
+    """
+    Validate folder hierarchy input for safety and compatibility.
+
+    Args:
+        hierarchy: Hierarchy string to validate
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    # Check for empty input
+    if not hierarchy or not hierarchy.strip():
+        return False, "Hierarchy cannot be empty"
+
+    # Parse hierarchy
+    parts = parse_folder_hierarchy(hierarchy)
+
+    if not parts:
+        return False, "No valid folder names found"
+
+    # Check for excessive nesting (Windows has 260 char path limit)
+    if len(parts) > 15:
+        return False, f"Too many nesting levels ({len(parts)}). Maximum: 15"
+
+    # Check individual folder name lengths
+    for part in parts:
+        if len(part) > 255:  # Max filename length on most systems
+            return False, f"Folder name too long: '{part[:50]}...'"
+
+        if len(part) < 1:
+            return False, "Empty folder name in hierarchy"
+
+        # Check for invalid characters (Windows + Unix)
+        invalid_chars = '<>:"|?*\x00/\\'
+        invalid_found = [c for c in invalid_chars if c in part]
+        if invalid_found:
+            return False, f"Invalid characters in '{part}': {', '.join(repr(c) for c in invalid_found)}"
+
+    # Check estimated total path length
+    # Account for separators and some base path
+    estimated_length = len(os.path.sep.join(parts)) + 50  # +50 for base path
+    if estimated_length > 240:  # Conservative limit below Windows 260
+        return False, f"Total path too long (estimated {estimated_length} chars). Maximum: 240"
+
+    return True, "Valid hierarchy"
+
+
 def generate_numbered_folder_names(count: int) -> List[str]:
     """
     Generate numbered folder names with zero-padding.
@@ -2164,6 +2253,12 @@ def create_custom_hierarchy_gui():
 
     if not hierarchy:
         return  # User cancelled
+
+    # Validate hierarchy input
+    is_valid, error_msg = validate_folder_hierarchy(hierarchy)
+    if not is_valid:
+        messagebox.showerror("Invalid Hierarchy", f"❌ {error_msg}", parent=root)
+        return
 
     # Prompt for number of folders in final level
     num_folders_str = simpledialog.askstring(
