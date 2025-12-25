@@ -3987,10 +3987,12 @@ for title in sorted(sections.keys()):
         button_row = ttk.Frame(sect)
         button_row.pack(fill="x", padx=6, pady=(6,3))
         ttk.Button(button_row, text="Create A-Z + 0-9 Folders", command=create_alphanumeric_folders).pack(side="left", padx=(0, 6))
+        ttk.Button(button_row, text="Create Custom Hierarchy", command=create_custom_hierarchy_gui).pack(side="left", padx=(0, 6))
 
-        # Options row
+        # Options row (for A-Z folder creation)
         options_row = ttk.Frame(sect)
         options_row.pack(fill="x", padx=6, pady=(0,6))
+        ttk.Label(options_row, text="A-Z Options:", foreground="gray").pack(side="left", padx=(0,6))
         ttk.Checkbutton(options_row, text="A-Z", variable=var_create_az).pack(side="left", padx=(0,6))
         ttk.Checkbutton(options_row, text="0-9", variable=var_create_09).pack(side="left", padx=(0,6))
         ttk.Checkbutton(options_row, text="!@#$", variable=var_create_special).pack(side="left", padx=(0,6))
