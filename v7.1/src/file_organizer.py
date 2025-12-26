@@ -2838,8 +2838,8 @@ def search_and_collect():
             "Invalid Folder Name",
             f"Folder Name should be a simple folder name, not a path.\n\n"
             f"You entered: {folder_name}\n\n"
-            f"Please enter just the folder name (e.g., 'Satomi_Collection', 'DELETE', etc.)\n"
-            f"Not a full path like 'H:\\Folder\\Name'"
+            f"Please enter just the folder name (e.g., 'MyPhotos', 'DELETE', etc.)\n"
+            f"Not a full path like 'C:\\Folder\\Name'"
         )
         return
 
