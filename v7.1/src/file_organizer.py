@@ -2800,6 +2800,313 @@ Create {len(missing)} placeholder files?"""
     ).pack(pady=5)
 
 
+def search_and_collect():
+    """
+    Search for files matching a custom pattern in root folder only.
+    Shows selection window where user can pick which files to move.
+    """
+    APP_LOGGER.info("=== Pattern Search Started ===")
+
+    source_dirs = get_source_dirs()
+    APP_LOGGER.debug(f"Source directories from get_source_dirs(): {source_dirs}")
+
+    if not source_dirs:
+        APP_LOGGER.warning("No source directories provided")
+        messagebox.showerror("Error", "Please select at least one source directory.")
+        return
+
+    # For simplicity, use only first source directory
+    source_dir = source_dirs[0]
+    if not os.path.exists(source_dir):
+        messagebox.showerror("Error", f"Source directory does not exist:\n{source_dir}")
+        return
+
+    pattern = var_search_pattern.get().strip()
+    APP_LOGGER.debug(f"Pattern: '{pattern}'")
+
+    if not pattern:
+        APP_LOGGER.warning("No pattern provided")
+        messagebox.showwarning("No Pattern", "Please enter a search pattern.\n\nExamples:\n  *filename* = anywhere in name\n  filename* = starts with\n  *.jpg = ends with")
+        return
+
+    # Search root folder only (not subfolders)
+    APP_LOGGER.info(f"Searching root of '{source_dir}' for pattern '{pattern}'")
+    status_label.config(text=f"🔍 Searching root folder for '{pattern}'...")
+    root.update()
+
+    matching_files = []
+
+    try:
+        import fnmatch
+
+        # Only scan files in the root directory
+        if os.path.isdir(source_dir):
+            for filename in os.listdir(source_dir):
+                filepath = os.path.join(source_dir, filename)
+
+                # Skip if it's a directory
+                if os.path.isdir(filepath):
+                    continue
+
+                # Check if filename matches pattern (case-insensitive)
+                if fnmatch.fnmatch(filename.lower(), pattern.lower()):
+                    matching_files.append((filepath, filename))
+                    APP_LOGGER.debug(f"Match found: {filename}")
+
+        # Sort alphabetically
+        matching_files.sort(key=lambda x: x[1].lower())
+
+        APP_LOGGER.info(f"Search complete: found {len(matching_files)} matches in root folder")
+        status_label.config(text=f"✓ Found {len(matching_files)} matches")
+
+    except Exception as e:
+        APP_LOGGER.error(f"Search failed: {str(e)}", exc_info=True)
+        status_label.config(text="❌ Search failed")
+        messagebox.showerror("Search Error", f"Error during search:\n{str(e)}")
+        return
+
+    # Show results
+    if not matching_files:
+        no_match_msg = f"No files found matching pattern: '{pattern}'\n\n"
+        no_match_msg += f"Searched in: {source_dir}\n"
+        no_match_msg += f"(Root files only - subfolders ignored)\n\n"
+        no_match_msg += "Tips:\n"
+        no_match_msg += "  • Use *pattern* to find anywhere in filename\n"
+        no_match_msg += "  • Use pattern* to find at start\n"
+        no_match_msg += "  • Use *.ext to find by extension\n"
+        no_match_msg += "  • Search is case-insensitive"
+        messagebox.showinfo("No Matches", no_match_msg)
+        status_label.config(text="No matches found")
+        return
+
+    # Open selection window
+    show_file_selection_window(source_dir, pattern, matching_files)
+
+
+def show_file_selection_window(source_dir, pattern, matching_files):
+    """
+    Show popup window with file selection checkboxes.
+    User can select files and choose destination to move them.
+    """
+    # Create popup window
+    popup = tk.Toplevel(root)
+    popup.title(f"Pattern Search Results - {pattern}")
+    popup.geometry("800x600")
+
+    # Make it modal
+    popup.transient(root)
+    popup.grab_set()
+
+    # Header frame
+    header = ttk.Frame(popup)
+    header.pack(fill="x", padx=10, pady=10)
+
+    ttk.Label(
+        header,
+        text=f"Found {len(matching_files)} files in root of:",
+        font=("Segoe UI", 10, "bold")
+    ).pack(anchor="w")
+
+    ttk.Label(
+        header,
+        text=source_dir,
+        font=("Segoe UI", 9)
+    ).pack(anchor="w", padx=20)
+
+    ttk.Label(
+        header,
+        text=f"Pattern: {pattern}  |  Root files only (subfolders ignored)",
+        font=("Segoe UI", 9),
+        foreground="gray"
+    ).pack(anchor="w", pady=(5,0))
+
+    # Selection controls frame
+    controls = ttk.Frame(popup)
+    controls.pack(fill="x", padx=10, pady=5)
+
+    # Selection count label
+    count_var = tk.StringVar(value=f"Selected: 0 of {len(matching_files)}")
+    count_label = ttk.Label(controls, textvariable=count_var, font=("Segoe UI", 9, "bold"))
+    count_label.pack(side="left")
+
+    # File list frame with scrollbar
+    list_frame = ttk.Frame(popup)
+    list_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+    # Scrollbar
+    scrollbar = ttk.Scrollbar(list_frame)
+    scrollbar.pack(side="right", fill="y")
+
+    # Canvas for scrolling
+    canvas = tk.Canvas(list_frame, yscrollcommand=scrollbar.set)
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.config(command=canvas.yview)
+
+    # Frame inside canvas for checkboxes
+    checkbox_frame = ttk.Frame(canvas)
+    canvas_window = canvas.create_window((0, 0), window=checkbox_frame, anchor="nw")
+
+    # Store checkbox variables and file info
+    file_data = []
+
+    # Create checkboxes for each file
+    for filepath, filename in matching_files:
+        var = tk.BooleanVar(value=True)  # Default: all selected
+        cb = ttk.Checkbutton(
+            checkbox_frame,
+            text=filename,
+            variable=var,
+            command=lambda: update_count()
+        )
+        cb.pack(anchor="w", padx=5, pady=2)
+        file_data.append((filepath, filename, var))
+
+    def update_count():
+        """Update selection count"""
+        selected = sum(1 for _, _, var in file_data if var.get())
+        count_var.set(f"Selected: {selected} of {len(matching_files)}")
+
+    def select_all():
+        """Select all files"""
+        for _, _, var in file_data:
+            var.set(True)
+        update_count()
+
+    def select_none():
+        """Deselect all files"""
+        for _, _, var in file_data:
+            var.set(False)
+        update_count()
+
+    # Update scroll region when frame changes size
+    def on_frame_configure(event=None):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+        # Make canvas width match frame width
+        canvas.itemconfig(canvas_window, width=canvas.winfo_width())
+
+    checkbox_frame.bind("<Configure>", on_frame_configure)
+    canvas.bind("<Configure>", on_frame_configure)
+
+    # Initial count
+    update_count()
+
+    # Button controls at bottom
+    bottom_frame = ttk.Frame(popup)
+    bottom_frame.pack(fill="x", padx=10, pady=10)
+
+    # Select All/None buttons
+    select_frame = ttk.Frame(bottom_frame)
+    select_frame.pack(side="left")
+
+    ttk.Button(select_frame, text="Select All", command=select_all).pack(side="left", padx=2)
+    ttk.Button(select_frame, text="Select None", command=select_none).pack(side="left", padx=2)
+
+    # Move To frame
+    move_frame = ttk.Frame(bottom_frame)
+    move_frame.pack(side="right")
+
+    ttk.Label(move_frame, text="Move To:").pack(side="left", padx=5)
+
+    dest_var = tk.StringVar()
+    dest_entry = ttk.Entry(move_frame, textvariable=dest_var, width=40)
+    dest_entry.pack(side="left", padx=5)
+
+    def browse_dest():
+        """Browse for destination folder"""
+        folder = filedialog.askdirectory(title="Select destination folder")
+        if folder:
+            dest_var.set(folder)
+
+    ttk.Button(move_frame, text="Browse...", command=browse_dest).pack(side="left", padx=2)
+
+    def move_selected():
+        """Move selected files to destination"""
+        dest = dest_var.get().strip()
+
+        if not dest:
+            messagebox.showwarning("No Destination", "Please select a destination folder.")
+            return
+
+        if not os.path.exists(dest):
+            messagebox.showerror("Error", f"Destination folder does not exist:\n{dest}")
+            return
+
+        # Get selected files
+        selected_files = [(fp, fn) for fp, fn, var in file_data if var.get()]
+
+        if not selected_files:
+            messagebox.showwarning("No Selection", "Please select at least one file to move.")
+            return
+
+        # Confirm
+        if not messagebox.askyesno(
+            "Confirm Move",
+            f"Move {len(selected_files)} selected files to:\n{dest}\n\nProceed?"
+        ):
+            return
+
+        # Move files
+        moved = 0
+        failed = []
+        moved_indices = []
+
+        for i, (filepath, filename) in enumerate(selected_files):
+            dest_path = os.path.join(dest, filename)
+
+            # Handle collisions
+            if os.path.exists(dest_path):
+                base, ext = os.path.splitext(filename)
+                counter = 2
+                while os.path.exists(os.path.join(dest, f"{base}({counter}){ext}")):
+                    counter += 1
+                dest_path = os.path.join(dest, f"{base}({counter}){ext}")
+
+            try:
+                shutil.move(filepath, dest_path)
+                moved += 1
+                # Find index in file_data to remove
+                for idx, (fp, fn, var) in enumerate(file_data):
+                    if fp == filepath:
+                        moved_indices.append(idx)
+                        break
+            except Exception as e:
+                failed.append((filename, str(e)))
+
+        # Remove moved files from list (in reverse to preserve indices)
+        for idx in reversed(sorted(moved_indices)):
+            file_data[idx][2].set(False)  # Uncheck
+            cb_widget = checkbox_frame.winfo_children()[idx]
+            cb_widget.destroy()
+            del file_data[idx]
+
+        # Update count
+        update_count()
+
+        # Show result
+        result_msg = f"✓ Moved {moved} files to:\n{dest}\n\n"
+        if failed:
+            result_msg += f"❌ Failed: {len(failed)} files\n"
+            for fn, err in failed[:5]:
+                result_msg += f"  • {fn}: {err}\n"
+            if len(failed) > 5:
+                result_msg += f"  ... and {len(failed)-5} more\n"
+
+        messagebox.showinfo("Move Complete", result_msg)
+
+        # Close window if all files moved
+        if not file_data:
+            messagebox.showinfo("Complete", "All files have been moved.\nClosing selection window.")
+            popup.destroy()
+
+    ttk.Button(move_frame, text="➡️ Move Selected", command=move_selected).pack(side="left", padx=5)
+
+    # Center popup on screen
+    popup.update_idletasks()
+    x = (popup.winfo_screenwidth() // 2) - (popup.winfo_width() // 2)
+    y = (popup.winfo_screenheight() // 2) - (popup.winfo_height() // 2)
+    popup.geometry(f"+{x}+{y}")
+
+
 
 # ==============================
 # LOGIC FUNCTIONS (from v4)
