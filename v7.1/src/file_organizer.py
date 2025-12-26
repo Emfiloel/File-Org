@@ -2839,9 +2839,15 @@ def search_and_collect():
     try:
         import fnmatch
 
+        APP_LOGGER.debug(f"About to scan directory: {source_dir}")
+
         # Only scan files in the root directory
         if os.path.isdir(source_dir):
-            for filename in os.listdir(source_dir):
+            APP_LOGGER.debug("Directory exists, starting listdir...")
+            file_list = os.listdir(source_dir)
+            APP_LOGGER.debug(f"Found {len(file_list)} items in directory")
+
+            for filename in file_list:
                 filepath = os.path.join(source_dir, filename)
 
                 # Skip if it's a directory
@@ -2852,12 +2858,17 @@ def search_and_collect():
                 if fnmatch.fnmatch(filename.lower(), pattern.lower()):
                     matching_files.append((filepath, filename))
                     APP_LOGGER.debug(f"Match found: {filename}")
+        else:
+            APP_LOGGER.warning(f"Source dir '{source_dir}' is not a directory")
 
         # Sort alphabetically
+        APP_LOGGER.debug(f"Sorting {len(matching_files)} matches...")
         matching_files.sort(key=lambda x: x[1].lower())
 
         APP_LOGGER.info(f"Search complete: found {len(matching_files)} matches in root folder")
         status_label.config(text=f"✓ Found {len(matching_files)} matches")
+        root.update()
+
 
     except Exception as e:
         APP_LOGGER.error(f"Search failed: {str(e)}", exc_info=True)
