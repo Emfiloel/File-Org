@@ -2833,8 +2833,18 @@ def search_and_collect():
         messagebox.showerror("Error", f"Target directory does not exist:\n{target_dir}")
         return
 
-    # Search for matching files
-    status_label.config(text="🔍 Searching for matching files...")
+    # Verify source directories exist
+    valid_sources = [d for d in source_dirs if os.path.exists(d)]
+    if not valid_sources:
+        messagebox.showerror(
+            "Error",
+            f"No valid source directories found.\n\nSource directories:\n" +
+            "\n".join(f"  • {d} (does not exist)" for d in source_dirs)
+        )
+        return
+
+    # Show search info
+    status_label.config(text=f"🔍 Searching {len(valid_sources)} directories for pattern '{pattern}'...")
     root.update()
 
     matching_files = []
@@ -2843,7 +2853,7 @@ def search_and_collect():
     try:
         import fnmatch
 
-        for source_dir in source_dirs:
+        for source_dir in valid_sources:
             for dirpath, dirnames, filenames in os.walk(source_dir):
                 # Skip certain folders
                 dirnames[:] = [d for d in dirnames if not should_skip_folder(d)]
@@ -2856,8 +2866,8 @@ def search_and_collect():
                         status_label.config(text=f"🔍 Scanned {total_scanned} files, found {len(matching_files)} matches...")
                         root.update()
 
-                    # Check if filename matches pattern
-                    if fnmatch.fnmatch(filename, pattern):
+                    # Check if filename matches pattern (case-insensitive)
+                    if fnmatch.fnmatch(filename.lower(), pattern.lower()):
                         src_path = os.path.join(dirpath, filename)
                         matching_files.append((src_path, filename))
 
@@ -2870,7 +2880,14 @@ def search_and_collect():
 
     # Show preview
     if not matching_files:
-        messagebox.showinfo("No Matches", f"No files found matching pattern: {pattern}\n\nTotal scanned: {total_scanned}")
+        no_match_msg = f"No files found matching pattern: '{pattern}'\n\n"
+        no_match_msg += f"Searched directories:\n" + "\n".join(f"  • {d}" for d in valid_sources) + "\n\n"
+        no_match_msg += f"Total files scanned: {total_scanned}\n\n"
+        no_match_msg += "Tips:\n"
+        no_match_msg += "  • Pattern is now case-insensitive\n"
+        no_match_msg += "  • Use * for wildcard (e.g., IMG*, *.jpg)\n"
+        no_match_msg += "  • Pattern searches entire filename"
+        messagebox.showinfo("No Matches", no_match_msg)
         return
 
     # Preview dialog
