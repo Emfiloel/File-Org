@@ -2831,8 +2831,6 @@ def search_and_collect():
 
     # Search root folder only (not subfolders)
     APP_LOGGER.info(f"Searching root of '{source_dir}' for pattern '{pattern}'")
-    status_label.config(text=f"🔍 Searching root folder for '{pattern}'...")
-    root.update()
 
     matching_files = []
 
@@ -2866,13 +2864,10 @@ def search_and_collect():
         matching_files.sort(key=lambda x: x[1].lower())
 
         APP_LOGGER.info(f"Search complete: found {len(matching_files)} matches in root folder")
-        status_label.config(text=f"✓ Found {len(matching_files)} matches")
-        root.update()
 
 
     except Exception as e:
         APP_LOGGER.error(f"Search failed: {str(e)}", exc_info=True)
-        status_label.config(text="❌ Search failed")
         messagebox.showerror("Search Error", f"Error during search:\n{str(e)}")
         return
 
@@ -2887,7 +2882,6 @@ def search_and_collect():
         no_match_msg += "  • Use *.ext to find by extension\n"
         no_match_msg += "  • Search is case-insensitive"
         messagebox.showinfo("No Matches", no_match_msg)
-        status_label.config(text="No matches found")
         return
 
     # Open selection window
