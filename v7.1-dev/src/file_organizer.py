@@ -2805,37 +2805,56 @@ def search_and_collect():
     Search for files matching a custom pattern and collect them into a folder.
     User Feature Request #2: Custom pattern search with user-specified pattern
     """
+    APP_LOGGER.info("=== Pattern Search Started ===")
+
     source_dirs = get_source_dirs()
+    APP_LOGGER.debug(f"Source directories from get_source_dirs(): {source_dirs}")
+
     if not source_dirs:
+        APP_LOGGER.warning("No source directories provided")
         messagebox.showerror("Error", "Please select at least one source directory.")
         return
 
     pattern = var_search_pattern.get().strip()
+    APP_LOGGER.debug(f"Pattern: '{pattern}'")
+
     if not pattern:
+        APP_LOGGER.warning("No pattern provided")
         messagebox.showwarning("No Pattern", "Please enter a search pattern (e.g., IMG*, *-001-*, *.jpg)")
         return
 
     folder_name = var_search_folder.get().strip()
+    APP_LOGGER.debug(f"Folder name: '{folder_name}'")
+
     if not folder_name:
+        APP_LOGGER.warning("No folder name provided")
         messagebox.showwarning("No Folder Name", "Please specify a folder name for collected files.")
         return
 
     # Sanitize folder name
     folder_name = sanitize_folder_name(folder_name)
+    APP_LOGGER.debug(f"Sanitized folder name: '{folder_name}'")
 
     # Get target directory
     target_dir = (target_entry.get() or "").strip()
+    APP_LOGGER.debug(f"Target directory: '{target_dir}'")
+
     if not target_dir:
+        APP_LOGGER.warning("No target directory provided")
         messagebox.showerror("Error", "Please select a target directory.")
         return
 
     if not os.path.exists(target_dir):
+        APP_LOGGER.error(f"Target directory does not exist: {target_dir}")
         messagebox.showerror("Error", f"Target directory does not exist:\n{target_dir}")
         return
 
     # Verify source directories exist
     valid_sources = [d for d in source_dirs if os.path.exists(d)]
+    APP_LOGGER.debug(f"Valid source directories: {valid_sources}")
+
     if not valid_sources:
+        APP_LOGGER.error(f"No valid source directories found. Provided: {source_dirs}")
         messagebox.showerror(
             "Error",
             f"No valid source directories found.\n\nSource directories:\n" +
@@ -2844,6 +2863,7 @@ def search_and_collect():
         return
 
     # Show search info
+    APP_LOGGER.info(f"Starting search: pattern='{pattern}', sources={len(valid_sources)}, target='{target_dir}'")
     status_label.config(text=f"🔍 Searching {len(valid_sources)} directories for pattern '{pattern}'...")
     root.update()
 
@@ -2852,9 +2872,13 @@ def search_and_collect():
 
     try:
         import fnmatch
+        APP_LOGGER.debug("Starting file walk through source directories")
 
         for source_dir in valid_sources:
+            APP_LOGGER.debug(f"Walking source directory: {source_dir}")
+            dir_count = 0
             for dirpath, dirnames, filenames in os.walk(source_dir):
+                dir_count += 1
                 # Skip certain folders
                 dirnames[:] = [d for d in dirnames if not should_skip_folder(d)]
 
@@ -2863,6 +2887,7 @@ def search_and_collect():
 
                     # Update progress every 1000 files
                     if total_scanned % 1000 == 0:
+                        APP_LOGGER.debug(f"Progress: scanned {total_scanned} files, found {len(matching_files)} matches")
                         status_label.config(text=f"🔍 Scanned {total_scanned} files, found {len(matching_files)} matches...")
                         root.update()
 
@@ -2870,10 +2895,15 @@ def search_and_collect():
                     if fnmatch.fnmatch(filename.lower(), pattern.lower()):
                         src_path = os.path.join(dirpath, filename)
                         matching_files.append((src_path, filename))
+                        APP_LOGGER.debug(f"Match found: {filename} in {dirpath}")
 
+            APP_LOGGER.debug(f"Finished walking {source_dir}: visited {dir_count} directories")
+
+        APP_LOGGER.info(f"Search complete: scanned {total_scanned} files, found {len(matching_files)} matches")
         status_label.config(text=f"✓ Search complete: {len(matching_files)} matches found")
 
     except Exception as e:
+        APP_LOGGER.error(f"Search failed with exception: {str(e)}", exc_info=True)
         status_label.config(text="❌ Search failed")
         messagebox.showerror("Search Error", f"Error during search:\n{str(e)}")
         return
