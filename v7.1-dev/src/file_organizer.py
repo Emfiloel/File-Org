@@ -2878,6 +2878,7 @@ def search_and_collect():
     APP_LOGGER.info(f"Starting search: pattern='{pattern}', sources={len(valid_sources)}, target='{target_dir}'")
     status_label.config(text=f"🔍 Searching {len(valid_sources)} directories for pattern '{pattern}'...")
     root.update()
+    APP_LOGGER.debug("GUI updated, about to start file scanning")
 
     matching_files = []
     total_scanned = 0
@@ -2885,6 +2886,7 @@ def search_and_collect():
     try:
         import fnmatch
         APP_LOGGER.debug("Starting file walk through source directories")
+        APP_LOGGER.debug(f"About to walk through {len(valid_sources)} source directories")
 
         for source_dir in valid_sources:
             APP_LOGGER.debug(f"Walking source directory: {source_dir}")
