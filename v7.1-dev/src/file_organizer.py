@@ -2831,6 +2831,18 @@ def search_and_collect():
         messagebox.showwarning("No Folder Name", "Please specify a folder name for collected files.")
         return
 
+    # Validate folder name (should not be a path)
+    if '\\' in folder_name or '/' in folder_name or ':' in folder_name:
+        APP_LOGGER.error(f"Folder name contains path separators: '{folder_name}'")
+        messagebox.showerror(
+            "Invalid Folder Name",
+            f"Folder Name should be a simple folder name, not a path.\n\n"
+            f"You entered: {folder_name}\n\n"
+            f"Please enter just the folder name (e.g., 'Satomi_Collection', 'DELETE', etc.)\n"
+            f"Not a full path like 'H:\\Folder\\Name'"
+        )
+        return
+
     # Sanitize folder name
     folder_name = sanitize_folder_name(folder_name)
     APP_LOGGER.debug(f"Sanitized folder name: '{folder_name}'")
