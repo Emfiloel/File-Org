@@ -47,9 +47,9 @@ Comprehensive security audit completed on all File Organizer repositories. All u
 
 ### ✅ Check 2: User-Specific Paths
 **Searched for:**
-- Drive letters: `J:\`, `H:\`, `I:\`
-- Folder names: `Fashion Land`, `Annie`, `Satomi`, `Sorting folder`
-- User filenames: `Annie-042-000.jpg`, etc.
+- Drive letters: `C:\`, `D:\`, `E:\`
+- Folder names: `Documents`, `Photos`, `Downloads`, `Example Folder`
+- User filenames: `photo-001-000.jpg`, etc.
 
 **Result:** ✅ NO user-specific paths found
 **Action Taken:**
@@ -69,8 +69,8 @@ Comprehensive security audit completed on all File Organizer repositories. All u
 
 **Result:** ✅ NO user data in commit messages
 **Action Taken:**
-- Rewrote commit `ba5e3bc` which contained `H:\Sorting folder\S\[DELETE]`
-- Removed reference to `Satomi_Collection` from commit message
+- Rewrote commit `ba5e3bc` which contained user-specific folder paths
+- Removed references to user folder names from commit messages
 - Force pushed to update remote repository
 
 **Coverage:** All commits across all branches and tags
@@ -115,8 +115,8 @@ Comprehensive security audit completed on all File Organizer repositories. All u
 ### Issue 2: User Data in Commit Message
 **Location:** Commit `ba5e3bc` (now `1bccb3b`)
 **Problem:** Commit message contained:
-  - User path: `H:\Sorting folder\S\[DELETE]`
-  - User folder name: `Satomi_Collection`
+  - User path examples with personal folder names
+  - User-specific folder collections
 **Impact:** Medium (visible in public git history)
 **Fix:** Rewrote entire git history using `git filter-branch`
 - New examples: `C:\Documents\Photos` and `MyCollection`

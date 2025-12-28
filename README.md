@@ -14,13 +14,14 @@
 
 ```
 File-Org/
-├── v7.1/                    # ✅ CURRENT VERSION (December 2025)
+├── v7.2/                    # ✅ CURRENT VERSION (December 2025)
 │   ├── src/                 # Source code
 │   ├── tests/               # Test suite (90 tests)
 │   ├── docs/                # Documentation
 │   ├── requirements.txt     # Production dependencies
 │   └── requirements-dev.txt # Development dependencies
 │
+├── v7.1/                    # Previous version (archived)
 ├── .github/                # GitHub Actions CI/CD workflows
 └── README.md               # This file
 ```
@@ -33,7 +34,7 @@ File-Org/
 
 ```bash
 # Navigate to current version
-cd v7.1/
+cd v7.2/
 
 # Install dependencies
 pip install -r requirements.txt
@@ -46,7 +47,7 @@ python src/file_organizer.py
 
 ```bash
 # Navigate to current version
-cd v7.1/
+cd v7.2/
 
 # Install development dependencies
 pip install -r requirements-dev.txt
@@ -68,9 +69,36 @@ File Organizer is a desktop application that automatically organizes your files 
 
 ## ✨ Features
 
-### **v7.1 (Current Version)** - December 2025
+### **v7.2 (Current Version)** - December 2025
 
-**🆕 New in v7.1:**
+**🆕 New in v7.2:**
+- ✅ **Recursive Missing File Scanner**
+  - Scan entire directory trees for missing files
+  - Process each subfolder independently
+  - Interactive folder selection UI with pattern counts
+  - Progress tracking for large folder hierarchies
+  - Choose between single-folder or recursive mode
+
+- ✅ **Global Case Sensitivity Toggle**
+  - Control case-sensitive matching for all operations
+  - Affects pattern search, extensions, folders, camera tags
+  - GUI checkbox near "target = source" option
+  - Defaults to case-insensitive for backward compatibility
+  - Windows path validation stays case-insensitive for security
+
+- ✅ **Send to Recycle Bin**
+  - Safely remove files with system recycle bin integration
+  - Dedicated button in file selection window
+  - Platform-independent (Windows/Mac/Linux via send2trash)
+  - Confirmation dialog prevents accidental deletion
+  - Operation logging for tracking
+
+- ✅ **Enhanced Security**
+  - Removed all user-specific paths from documentation
+  - Cleaned up SECURITY_AUDIT_REPORT.md
+  - Protected path validation for recycle bin operations
+
+**Features from v7.1:**
 - ✅ **Missing File Scanner**
   - Detects gaps in numbered file sequences
   - Creates placeholder files to maintain organization
